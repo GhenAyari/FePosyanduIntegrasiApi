@@ -1,0 +1,386 @@
+/* ===================================
+   KONTAK DARURAT PAGE STYLES
+   =================================== */
+
+.kontak-page {
+  min-height: 100vh;
+  background-color: #f9f9ff;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.kontak-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 24px 48px;
+  padding-top: calc(72px + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===================================
+   KONTAK HEADER
+   =================================== */
+.kontak-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.kontak-main-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  color: #111c2c;
+  line-height: 40px;
+}
+
+.kontak-main-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  color: #42474e;
+  line-height: 28px;
+  max-width: 560px;
+  text-align: center;
+}
+
+/* ===================================
+   EMERGENCY NUMBER CARD
+   =================================== */
+.kontak-emergency-card {
+  border-radius: 12px;
+  background-color: #ba1a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 32px;
+  box-shadow: 0 10px 30px rgba(186,26,26,0.3), 0 4px 6px -4px rgba(0,0,0,0.1);
+  animation: kontak-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes kontak-pulse {
+  0%, 100% { box-shadow: 0 10px 30px rgba(186,26,26,0.3); }
+  50% { box-shadow: 0 10px 48px rgba(186,26,26,0.55); }
+}
+
+.kontak-phone-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kontak-phone-icon svg {
+  width: 80px;
+  height: 70px;
+}
+
+.kontak-emergency-number {
+  font-size: 60px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 6px;
+  color: #fff;
+  line-height: 60px;
+  text-align: center;
+}
+
+.kontak-emergency-desc {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  line-height: 28px;
+  text-align: center;
+}
+
+/* ===================================
+   CONTACT CARDS GRID (3 columns)
+   =================================== */
+.kontak-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.kontak-service-card {
+  border: 1px solid #c2c7cf;
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.kontak-service-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+}
+
+.kontak-service-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 36px;
+}
+
+.kontak-service-icon.ambulans { background-color: #ffdad6; }
+.kontak-service-icon.rumahsakit { background-color: #99c2f1; }
+.kontak-service-icon.bidan { background-color: #f0abc4; }
+
+.kontak-service-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  flex: 1;
+}
+
+.kontak-service-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111c2c;
+  line-height: 32px;
+}
+
+.kontak-service-desc {
+  font-size: 16px;
+  font-weight: 400;
+  color: #42474e;
+  line-height: 24px;
+}
+
+.kontak-service-btn {
+  border-radius: 8px;
+  padding: 16px 0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.kontak-service-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.kontak-service-btn.ambulans { background-color: #37618b; }
+.kontak-service-btn.rumahsakit { background-color: #37618b; }
+.kontak-service-btn.bidan { background-color: #854d63; }
+
+/* ===================================
+   BOTTOM SECTION: PROSEDUR + GPS
+   =================================== */
+.kontak-bottom-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+}
+
+.kontak-prosedur-card {
+  border-radius: 12px;
+  background-color: #f0f3ff;
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.kontak-prosedur-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.kontak-prosedur-badge {
+  font-size: 14px;
+  font-weight: 400;
+  color: #37618b;
+}
+
+.kontak-prosedur-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #37618b;
+  line-height: 20px;
+}
+
+.kontak-prosedur-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kontak-step {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.kontak-step-check {
+  font-size: 18px;
+  color: #37618b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.kontak-step-text {
+  font-size: 16px;
+  font-weight: 400;
+  color: #42474e;
+  line-height: 24px;
+  margin: 0;
+}
+
+.kontak-step-text strong {
+  font-weight: 700;
+}
+
+/* GPS Share Card */
+.kontak-gps-card {
+  border: 1px solid #c2c7cf;
+  border-radius: 12px;
+  background-color: #fff;
+  padding: 40px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.kontak-gps-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 54.7% 123.7% at 50% 50%, #37618b 0%, rgba(55,97,139,0) 100%);
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.kontak-gps-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  background-color: rgba(153,194,241,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #37618b;
+  position: relative;
+}
+
+.kontak-gps-badge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #42474e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kontak-gps-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #37618b;
+  line-height: 28px;
+}
+
+.kontak-gps-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: #42474e;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* ===================================
+   MAP SECTION
+   =================================== */
+.kontak-map-section {
+  border: 1px solid #c2c7cf;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 400px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.kontak-map-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kontak-map-badge {
+  position: absolute;
+  top: 17px;
+  left: 17px;
+  border: 1px solid #c2c7cf;
+  border-radius: 8px;
+  background-color: rgba(249,249,255,0.9);
+  backdrop-filter: blur(6px);
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #111c2c;
+}
+
+.kontak-map-badge-icon {
+  color: #37618b;
+  font-size: 16px;
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+@media (max-width: 768px) {
+  .kontak-main {
+    padding: 16px 16px 48px;
+    padding-top: calc(72px + 16px);
+  }
+
+  .kontak-emergency-number {
+    font-size: 40px;
+    letter-spacing: 3px;
+  }
+
+  .kontak-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kontak-bottom-grid {
+    flex-direction: column;
+  }
+
+  .kontak-main-title {
+    font-size: 24px;
+  }
+}
