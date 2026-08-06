@@ -33,18 +33,6 @@ export default function ArtikelKesehatan({ activePage, onNavigate, onDarurat }) 
               Artikel yang ditinjau oleh ahli tentang kesehatan ibu, nutrisi anak, dan
               perkembangan awal yang disesuaikan untuk masyarakat Loa Duri Ulu.
             </p>
-            <div className="artikel-hero-actions">
-              <button className="btn-cari">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path
-                    d="M16.6 18L10.3 11.7C9.8 12.1 9.225 12.4167 8.575 12.65 7.925 12.8833 7.2333 13 6.5 13 4.6833 13 3.1458 12.3708 1.8875 11.1125 0.6292 9.8542 0 8.3167 0 6.5 0 4.6833 0.6292 3.1458 1.8875 1.8875 3.1458 0.6292 4.6833 0 6.5 0 8.3167 0 9.8542 0.6292 11.1125 1.8875 12.3708 3.1458 13 4.6833 13 6.5 13 7.2333 12.8833 7.925 12.65 8.575 12.4167 9.225 12.1 9.8 11.7L18 16.6 16.6 18V18M6.5 11C7.75 11 8.8125 10.5625 9.6875 9.6875 10.5625 8.8125 11 7.75 11 6.5 11 5.25 10.5625 4.1875 9.6875 3.3125 8.8125 2.4375 7.75 2 6.5 2 5.25 2 4.1875 2.4375 3.3125 3.3125 2.4375 4.1875 2 5.25 2 6.5 2 7.75 2.4375 8.8125 3.3125 9.6875 4.1875 10.5625 5.25 11 6.5 11V11"
-                    fill="white"
-                  />
-                </svg>
-                Cari di Perpustakaan
-              </button>
-              <button className="btn-kategori">Lihat Semua Kategori</button>
-            </div>
           </div>
         </section>
 

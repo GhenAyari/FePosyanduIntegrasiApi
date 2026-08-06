@@ -142,26 +142,6 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
       <main className="kalkulator-main">
         {/* Hero Grid */}
         <div className="kalkulator-hero-grid">
-          {/* Stats Card */}
-          <div className="kalkulator-stats-card">
-            <div>
-              <div className="kalkulator-stats-label">AKTIVITAS HARI INI</div>
-              <div className="kalkulator-stats-number">1.001</div>
-              <div className="kalkulator-stats-desc">
-                Penghitungan mandiri yang dilakukan warga hari ini secara kolektif.
-              </div>
-            </div>
-            <div className="kalkulator-stats-progress">
-              <div className="kalkulator-progress-row">
-                <span className="kalkulator-progress-label">Target Komunitas</span>
-                <span className="kalkulator-progress-val">85%</span>
-              </div>
-              <div className="kalkulator-progress-bg">
-                <div className="kalkulator-progress-fill" style={{ width: '85%' }} />
-              </div>
-            </div>
-          </div>
-
           {/* Welcome Card */}
           <div className="kalkulator-hero-welcome">
             <div className="kalkulator-hero-blur-circle" />
@@ -408,35 +388,6 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               )}
             </div>
           </div>
-        </div>
-
-        {/* Feedback Poll */}
-        <div className="kalkulator-feedback-card" style={{ marginTop: '32px' }}>
-          <div className="kalkulator-feedback-header">
-            <div className="kalkulator-feedback-title">Umpan Balik Warga</div>
-            <i className="bi bi-chat-heart-fill" style={{ color: 'var(--violet-deep)' }}></i>
-          </div>
-          <p className="kalkulator-feedback-question">
-            Seberapa bermanfaat kalkulator kesehatan mandiri ini untuk memantau kesehatan keluarga Anda?
-          </p>
-          <div className="kalkulator-feedback-options">
-            {feedbackOptions.map((opt, idx) => (
-              <button
-                key={opt}
-                type="button"
-                className={`kalkulator-feedback-option ${feedbackChoice === idx ? 'selected' : ''}`}
-                onClick={() => handleFeedbackVote(idx)}
-              >
-                <span>{idx + 1}. {opt}</span>
-                <span className="kalkulator-feedback-radio">
-                  <span className="kalkulator-feedback-radio-dot" />
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="kalkulator-feedback-votecount">
-            +{voteCount} warga <span>lainnya telah memberikan umpan balik</span>
-          </p>
         </div>
       </main>
 

@@ -24,11 +24,9 @@
    HERO GRID
    =================================== */
 .kalkulator-hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 20px;
-  min-height: auto;
-  align-items: stretch;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Stats Card (dark) */
@@ -125,6 +123,8 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .kalkulator-hero-blur-circle {
