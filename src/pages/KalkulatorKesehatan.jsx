@@ -70,8 +70,6 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
   const [hpht, setHpht] = useState('');
   const [hplResult, setHplResult] = useState(null);
 
-  // History
-  const [history, setHistory] = useState([]);
 
   // Feedback poll
   const [feedbackChoice, setFeedbackChoice] = useState(null);
@@ -350,27 +348,6 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
           </div>
         </div>
 
-        {/* History Section */}
-        <div className="kalkulator-history-card">
-          <div className="kalkulator-history-header">
-            <div className="kalkulator-history-title">Riwayat Terbaru</div>
-            {history.length > 0 && (
-              <button className="kalkulator-history-clear" onClick={() => setHistory([])}>Hapus Semua</button>
-            )}
-          </div>
-
-          {history.length === 0 ? (
-            <div className="kalkulator-history-empty">Belum ada riwayat penghitungan.</div>
-          ) : (
-            history.map((h, i) => (
-              <div key={i} className="kalkulator-history-row">
-                <span className="kalkulator-history-type">{h.type}</span>
-                <span className="kalkulator-history-result">{h.result}</span>
-                <span className="kalkulator-history-date">{h.date}</span>
-              </div>
-            ))
-          )}
-        </div>
 
         {/* Feedback Poll */}
         <div className="kalkulator-feedback-card">

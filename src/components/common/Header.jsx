@@ -30,8 +30,9 @@ export default function Header({ activePage = 'beranda', onNavigate, onDarurat }
             <button
               className="hamburger-btn"
               onClick={() => setSidebarOpen(true)}
+              aria-label="Menu"
             >
-              ☰
+              <i className="bi bi-list" style={{ fontSize: '20px' }}></i>
             </button>
 
             <div
@@ -109,7 +110,7 @@ export default function Header({ activePage = 'beranda', onNavigate, onDarurat }
               }}
               title="Kontak Darurat"
             >
-              🚨 Darurat
+              <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: '6px' }}></i> Darurat
             </button>
 
           </nav>
@@ -158,38 +159,40 @@ export default function Header({ activePage = 'beranda', onNavigate, onDarurat }
           <button
             onClick={()=>setSidebarOpen(false)}
           >
-            ✕
+            <i className="bi bi-x-lg"></i>
           </button>
 
         </div>
 
         <button onClick={(e)=>handleClick(e,"beranda")}>
-          🏠 Beranda
+          <i className="bi bi-house-door-fill" style={{ marginRight: '8px' }}></i> Beranda
         </button>
 
         <button onClick={(e)=>handleClick(e,"profil")}>
-          👥 Profil Posyandu
+          <i className="bi bi-people-fill" style={{ marginRight: '8px' }}></i> Profil Posyandu
         </button>
 
         <button onClick={(e)=>handleClick(e,"artikel")}>
-          📰 Artikel
+          <i className="bi bi-journal-text" style={{ marginRight: '8px' }}></i> Artikel
         </button>
 
         <button onClick={(e)=>handleClick(e,"jadwal")}>
-          📅 Jadwal
+          <i className="bi bi-calendar-event" style={{ marginRight: '8px' }}></i> Jadwal
         </button>
 
         <button onClick={(e)=>handleClick(e,"kalkulator")}>
-          🩺 Kalkulator
+          <i className="bi bi-calculator-fill" style={{ marginRight: '8px' }}></i> Kalkulator
         </button>
 
         <button
           onClick={()=>{
             setSidebarOpen(false);
-            onDarurat();
+            if (onDarurat) onDarurat();
+            else if (onNavigate) onNavigate('kontak');
           }}
+          className="darurat-btn-sidebar"
         >
-          🚨 Darurat
+          <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: '8px' }}></i> Darurat
         </button>
 
       </aside>

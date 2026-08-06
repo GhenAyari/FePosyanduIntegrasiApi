@@ -5,22 +5,22 @@ export default function DashboardHome({ role, onViewChange }) {
     <>
       <div className="grid grid-4" style={{ marginBottom: '18px' }}>
         <div className="stat-card" style={{ background: 'var(--cyan-bg)' }}>
-          <div className="ico" style={{ background: 'var(--cyan-deep)' }}><svg className="ic"><use href="#i-calendar" /></svg></div>
+          <div className="ico" style={{ background: 'var(--cyan-deep)' }}><i className="bi bi-calendar-event" style={{ fontSize: '18px', color: '#fff' }}></i></div>
           <div className="num">3 Agu</div>
           <div className="label">Jadwal rutin bulan ini</div>
         </div>
         <div className="stat-card" style={{ background: 'var(--orange-bg)' }}>
-          <div className="ico" style={{ background: 'var(--orange-deep)' }}><svg className="ic"><use href="#i-smile" /></svg></div>
+          <div className="ico" style={{ background: 'var(--orange-deep)' }}><i className="bi bi-emoji-smile" style={{ fontSize: '18px', color: '#fff' }}></i></div>
           <div className="num">42</div>
           <div className="label">Balita tercatat bulan ini</div>
         </div>
         <div className="stat-card" style={{ background: 'var(--magenta-bg)' }}>
-          <div className="ico" style={{ background: 'var(--magenta-deep)' }}><svg className="ic"><use href="#i-megaphone" /></svg></div>
+          <div className="ico" style={{ background: 'var(--magenta-deep)' }}><i className="bi bi-megaphone" style={{ fontSize: '18px', color: '#fff' }}></i></div>
           <div className="num">5</div>
           <div className="label">Pengaduan menunggu tindak lanjut</div>
         </div>
         <div className="stat-card" style={{ background: 'var(--green-bg)' }}>
-          <div className="ico" style={{ background: 'var(--green-deep)' }}><svg className="ic"><use href="#i-check" /></svg></div>
+          <div className="ico" style={{ background: 'var(--green-deep)' }}><i className="bi bi-check-lg" style={{ fontSize: '18px', color: '#fff' }}></i></div>
           <div className="num">2/3</div>
           <div className="label">Laporan bulan ini terkirim</div>
         </div>
@@ -77,15 +77,15 @@ export default function DashboardHome({ role, onViewChange }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <div className="bidang-icon-tile" style={{ background: 'var(--cyan-bg)', color: 'var(--cyan-deep)' }}><svg className="ic ic-sm"><use href="#i-smile" /></svg></div>
+              <div className="bidang-icon-tile" style={{ background: 'var(--cyan-bg)', color: 'var(--cyan-deep)' }}><i className="bi bi-emoji-smile"></i></div>
               <div><p style={{ fontSize: '12.5px', fontWeight: 700 }}>Data pemeriksaan Ananda Fitri disimpan</p><p style={{ fontSize: '11px', color: 'var(--ink-soft)', fontWeight: 600 }}>Bayi & Balita · 10 menit lalu</p></div>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <div className="bidang-icon-tile" style={{ background: 'var(--magenta-bg)', color: 'var(--magenta-deep)' }}><svg className="ic ic-sm"><use href="#i-megaphone" /></svg></div>
+              <div className="bidang-icon-tile" style={{ background: 'var(--magenta-bg)', color: 'var(--magenta-deep)' }}><i className="bi bi-megaphone"></i></div>
               <div><p style={{ fontSize: '12.5px', fontWeight: 700 }}>Pengaduan RTLH Bu Sari tersimpan</p><p style={{ fontSize: '11px', color: 'var(--ink-soft)', fontWeight: 600 }}>Perumahan Rakyat · 1 jam lalu</p></div>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <div className="bidang-icon-tile" style={{ background: 'var(--green-bg)', color: 'var(--green-deep)' }}><svg className="ic ic-sm"><use href="#i-book-open" /></svg></div>
+              <div className="bidang-icon-tile" style={{ background: 'var(--green-bg)', color: 'var(--green-deep)' }}><i className="bi bi-journal-text"></i></div>
               <div><p style={{ fontSize: '12.5px', fontWeight: 700 }}>Artikel "Tips Cegah Stunting" dipublikasikan</p><p style={{ fontSize: '11px', color: 'var(--ink-soft)', fontWeight: 600 }}>Artikel & Berita · Kemarin</p></div>
             </div>
           </div>
@@ -99,16 +99,16 @@ export default function DashboardHome({ role, onViewChange }) {
               <h3>Rekap 6 Bidang — Kesiapan Laporan 3 Bulanan</h3>
               <span className="badge badge-violet">Periode Mei–Jul 2026</span>
             </div>
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(6,1fr)' }}>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--cyan-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--cyan-deep)' }}><use href="#i-activity" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Kesehatan</p><span className="badge badge-green" style={{ marginTop: '6px' }}>Siap</span></div>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--orange-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--orange-deep)' }}><use href="#i-book" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Pendidikan</p><span className="badge badge-green" style={{ marginTop: '6px' }}>Siap</span></div>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--magenta-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--magenta-deep)' }}><use href="#i-droplet" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Pekerjaan Umum</p><span className="badge badge-orange" style={{ marginTop: '6px' }}>Proses</span></div>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--green-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--green-deep)' }}><use href="#i-home" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Perumahan</p><span className="badge badge-orange" style={{ marginTop: '6px' }}>Proses</span></div>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--violet-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--violet-deep)' }}><use href="#i-shield" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Trantibumlinmas</p><span className="badge badge-rose" style={{ marginTop: '6px' }}>Belum</span></div>
-              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--rose-bg)', border: 'none' }}><svg className="ic ic-lg" style={{ color: 'var(--rose-deep)' }}><use href="#i-heart" /></svg><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Sosial</p><span className="badge badge-rose" style={{ marginTop: '6px' }}>Belum</span></div>
+            <div className="grid rekap-6-grid">
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--cyan-bg)', border: 'none' }}><i className="bi bi-activity" style={{ fontSize: '20px', color: 'var(--cyan-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Kesehatan</p><span className="badge badge-green" style={{ marginTop: '6px' }}>Siap</span></div>
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--orange-bg)', border: 'none' }}><i className="bi bi-journal-text" style={{ fontSize: '20px', color: 'var(--orange-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Pendidikan</p><span className="badge badge-green" style={{ marginTop: '6px' }}>Siap</span></div>
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--magenta-bg)', border: 'none' }}><i className="bi bi-droplet-fill" style={{ fontSize: '20px', color: 'var(--magenta-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Pekerjaan Umum</p><span className="badge badge-orange" style={{ marginTop: '6px' }}>Proses</span></div>
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--green-bg)', border: 'none' }}><i className="bi bi-house-door-fill" style={{ fontSize: '20px', color: 'var(--green-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Perumahan</p><span className="badge badge-orange" style={{ marginTop: '6px' }}>Proses</span></div>
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--violet-bg)', border: 'none' }}><i className="bi bi-shield-fill-check" style={{ fontSize: '20px', color: 'var(--violet-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Trantibumlinmas</p><span className="badge badge-rose" style={{ marginTop: '6px' }}>Belum</span></div>
+              <div className="card pad-sm" style={{ textAlign: 'center', background: 'var(--rose-bg)', border: 'none' }}><i className="bi bi-heart-fill" style={{ fontSize: '20px', color: 'var(--rose-deep)' }}></i><p style={{ fontSize: '11.5px', fontWeight: 700, marginTop: '6px' }}>Sosial</p><span className="badge badge-rose" style={{ marginTop: '6px' }}>Belum</span></div>
             </div>
             <button className="btn btn-soft" style={{ marginTop: '16px' }} onClick={() => onViewChange('laporan')}>
-              Buka Rekapitulasi 3 Bulanan <svg className="ic ic-sm"><use href="#i-arrow-right" /></svg>
+              Buka Rekapitulasi 3 Bulanan <i className="bi bi-arrow-right ms-1"></i>
             </button>
           </div>
         </div>

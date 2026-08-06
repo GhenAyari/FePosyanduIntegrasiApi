@@ -26,53 +26,53 @@ import WargaPasswordView from '../components/dashboard/WargaPasswordView';
 const NAV = {
   kader: [
     {group:'Menu Utama', items:[
-      {id:'dashboard', label:'Beranda', ico:'i-home'},
-      {id:'kesehatan', label:'Pencatatan Kesehatan', ico:'i-activity'},
-      {id:'pengaduan', label:'Formulir & Pengaduan', ico:'i-megaphone'},
+      {id:'dashboard', label:'Beranda', ico:'bi bi-house-door-fill'},
+      {id:'kesehatan', label:'Pencatatan Kesehatan', ico:'bi bi-activity'},
+      {id:'pengaduan', label:'Formulir & Pengaduan', ico:'bi bi-megaphone-fill'},
     ]},
     {group:'Lainnya', items:[
-      {id:'kelolawarga', label:'Kelola Warga', ico:'i-users'},
-      {id:'kelola-makanan', label:'Kelola Data Makanan', ico:'i-leaf'},
-      {id:'artikel', label:'Artikel & Berita', ico:'i-book-open'},
-      {id:'laporan', label:'Riwayat Laporan', ico:'i-file'},
+      {id:'kelolawarga', label:'Kelola Warga', ico:'bi bi-people-fill'},
+      {id:'kelola-makanan', label:'Kelola Data Makanan', ico:'bi bi-egg-fried'},
+      {id:'artikel', label:'Artikel & Berita', ico:'bi bi-journal-text'},
+      {id:'laporan', label:'Riwayat Laporan', ico:'bi bi-file-earmark-text-fill'},
     ]}
   ],
   ketua: [
     {group:'Menu Utama', items:[
-      {id:'dashboard', label:'Beranda', ico:'i-home'},
-      {id:'kesehatan', label:'Pencatatan Kesehatan', ico:'i-activity'},
-      {id:'pengaduan', label:'Formulir & Pengaduan', ico:'i-megaphone'},
-      {id:'laporan', label:'Rekap & Laporan', ico:'i-file'},
+      {id:'dashboard', label:'Beranda', ico:'bi bi-house-door-fill'},
+      {id:'kesehatan', label:'Pencatatan Kesehatan', ico:'bi bi-activity'},
+      {id:'pengaduan', label:'Formulir & Pengaduan', ico:'bi bi-megaphone-fill'},
+      {id:'laporan', label:'Rekap & Laporan', ico:'bi bi-file-earmark-text-fill'},
     ]},
     {group:'Kelola Posyandu', items:[
-      {id:'profil', label:'Profil & Sarana', ico:'i-building'},
-      {id:'daftar', label:'Daftar 9 Posyandu', ico:'i-mappin'},
-      {id:'kelolawarga', label:'Kelola Warga', ico:'i-users'},
-      {id:'kelola-makanan', label:'Kelola Data Makanan', ico:'i-leaf'},
-      {id:'artikel', label:'Artikel & Berita', ico:'i-book-open'},
+      {id:'profil', label:'Profil & Sarana', ico:'bi bi-building'},
+      {id:'daftar', label:'Daftar 9 Posyandu', ico:'bi bi-geo-alt-fill'},
+      {id:'kelolawarga', label:'Kelola Warga', ico:'bi bi-people-fill'},
+      {id:'kelola-makanan', label:'Kelola Data Makanan', ico:'bi bi-egg-fried'},
+      {id:'artikel', label:'Artikel & Berita', ico:'bi bi-journal-text'},
     ]}
   ],
   puskesmas: [
     {group:'Menu Utama', items:[
-      {id:'puskesmas-dashboard', label:'Laporan per Posyandu', ico:'i-file'},
+      {id:'puskesmas-dashboard', label:'Laporan per Posyandu', ico:'bi bi-file-earmark-medical-fill'},
     ]}
   ],
   superadmin: [
     {group:'Menu Utama', items:[
-      {id:'superadmin-dashboard', label:'Transparansi Pelaporan', ico:'i-home'},
-      {id:'superadmin-analitik', label:'Dashboard Analitik 6 Bidang', ico:'i-bar-chart'},
-      {id:'superadmin-ekspor', label:'Ekspor Gabungan 9 Posyandu', ico:'i-file'},
+      {id:'superadmin-dashboard', label:'Transparansi Pelaporan', ico:'bi bi-house-door-fill'},
+      {id:'superadmin-analitik', label:'Dashboard Analitik 6 Bidang', ico:'bi bi-bar-chart-line-fill'},
+      {id:'superadmin-ekspor', label:'Ekspor Gabungan 9 Posyandu', ico:'bi bi-file-earmark-excel-fill'},
     ]}
   ],
   warga: [
     {group:'Menu Utama', items:[
-      {id:'warga-anak', label:'Rapor Kesehatan Keluarga', ico:'i-baby'},
-      {id:'warga-kalkulator', label:'Kalkulator Kesehatan', ico:'i-calculator'},
-      {id:'warga-kie', label:'Portal KIE Khusus', ico:'i-book-open'},
-      {id:'warga-kontak', label:'Kontak Posyandu', ico:'i-phone'},
+      {id:'warga-anak', label:'Rapor Kesehatan Keluarga', ico:'bi bi-person-heart'},
+      {id:'warga-kalkulator', label:'Kalkulator Kesehatan', ico:'bi bi-calculator-fill'},
+      {id:'warga-kie', label:'Portal KIE Khusus', ico:'bi bi-journal-bookmark-fill'},
+      {id:'warga-kontak', label:'Kontak Posyandu', ico:'bi bi-telephone-fill'},
     ]},
     {group:'Akun', items:[
-      {id:'warga-password', label:'Ganti Password', ico:'i-key'},
+      {id:'warga-password', label:'Ganti Password', ico:'bi bi-key-fill'},
     ]}
   ]
 };
@@ -165,7 +165,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
                     className={`nav-item ${currentView === item.id ? 'active' : ''}`}
                     onClick={() => handleNavClick(item.id)}
                   >
-                    <span className="ico"><svg className="ic ic-sm"><use href={`#${item.ico}`} /></svg></span>
+                    <span className="ico"><i className={item.ico} style={{ fontSize: '14px' }}></i></span>
                     {item.label}
                   </div>
                 ))}
@@ -173,7 +173,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
             ))}
             <div className="sidebar-foot">
               <button className="logout-btn" onClick={onLogout}>
-                <svg className="ic ic-sm"><use href="#i-logout" /></svg>
+                <i className="bi bi-box-arrow-right" style={{ fontSize: '15px' }}></i>
                 <span>Keluar</span>
               </button>
             </div>
@@ -188,7 +188,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
           <div className="topbar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button className="icon-btn hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Buka menu">
-                <svg className="ic"><use href="#i-menu" /></svg>
+                <i className="bi bi-list" style={{ fontSize: '20px' }}></i>
               </button>
               <div>
                 <h2 id="pageTitle">{TITLES[currentView] ? TITLES[currentView][0] : 'Beranda'}</h2>
@@ -196,7 +196,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
               </div>
             </div>
             <div className="topbar-right">
-              <button className="icon-btn"><svg className="ic"><use href="#i-bell" /></svg></button>
+              <button className="icon-btn"><i className="bi bi-bell" style={{ fontSize: '16px' }}></i></button>
               <div className="topbar-profile">
                 <div className="avatar-mini" id="topbarAvatar">{ROLE_AVATARS[role]}</div>
                 <div>

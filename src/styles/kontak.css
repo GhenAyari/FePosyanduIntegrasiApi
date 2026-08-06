@@ -11,8 +11,7 @@
 .kontak-main {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 24px 48px;
-  padding-top: calc(72px + 40px);
+  padding: 24px 24px 48px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -363,8 +362,7 @@
    =================================== */
 @media (max-width: 768px) {
   .kontak-main {
-    padding: 16px 16px 48px;
-    padding-top: calc(72px + 16px);
+    padding: 16px 16px 40px;
   }
 
   .kontak-emergency-number {

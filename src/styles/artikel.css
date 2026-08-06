@@ -14,8 +14,7 @@
 .artikel-main {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 20px 48px;
-  padding-top: calc(72px + 32px);
+  padding: 32px 24px 64px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -681,8 +680,7 @@
 
 @media (max-width: 768px) {
   .artikel-main {
-    padding: 16px 16px 48px;
-    padding-top: calc(72px + 16px);
+    padding: 24px 16px 48px;
     gap: 24px;
   }
 
@@ -811,8 +809,8 @@
 
 @media (max-width: 640px) {
   .artikel-main {
-    padding: 14px 12px 36px;
-    padding-top: calc(64px + 12px);
+    padding: 16px 12px 36px;
+    padding-top: 16px;
     gap: 20px;
   }
 

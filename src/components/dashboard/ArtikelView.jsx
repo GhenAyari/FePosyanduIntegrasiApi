@@ -43,23 +43,24 @@ export default function ArtikelView() {
   };
 
   return (
-    <div className="grid grid-2" style={{ gridTemplateColumns: '1.1fr 1fr' }}>
+    <div className="grid grid-2 articles-main-grid" style={{ gridTemplateColumns: '1.1fr 1fr' }}>
       <div>
         <div className="section-head">
-          <h3>Artikel & Berita Posyandu</h3>
-          <button className="btn btn-violet btn-sm" onClick={handleNew}><svg className="ic ic-sm"><use href="#i-plus" /></svg>Tulis Artikel</button>
+          <h3>Artikel &amp; Berita Posyandu</h3>
+          <button className="btn btn-violet btn-sm" onClick={handleNew}><i className="bi bi-plus-lg me-1"></i>Tulis Artikel</button>
         </div>
-        <div className="grid grid-2">
+        <div className="grid grid-2 articles-list-grid">
           {articles.length === 0 ? (
             <p style={{ gridColumn: '1/-1', color: 'var(--ink-soft)', fontWeight: 600, fontSize: '12.5px', padding: '8px 2px' }}>Belum ada artikel.</p>
           ) : (
             articles.map(a => {
               const [ico, color] = ARTIKEL_ICON[a.kategori] || ARTIKEL_ICON.Lainnya;
+              const bsIcon = a.kategori === 'Kesehatan' ? 'bi bi-activity' : a.kategori === 'Pendidikan' ? 'bi bi-journal-text' : a.kategori === 'Sosial' ? 'bi bi-heart-fill' : 'bi bi-file-earmark-text';
               const isDraf = a.status === 'draf';
               return (
                 <div key={a.id} className={`article-card ${isDraf ? 'is-draft' : ''} ${editingId === a.id ? 'editing' : ''}`}>
                   <div className="article-thumb" style={{ background: `var(--${color}-bg)`, color: `var(--${color}-deep)` }}>
-                    <svg className="ic ic-xl"><use href={`#${ico}`} /></svg>
+                    <i className={`${bsIcon}`} style={{ fontSize: '22px' }}></i>
                   </div>
                   <div className="article-body">
                     <span className="article-cat" style={{ color: `var(--${color}-deep)` }}>{a.kategori}</span>
@@ -70,9 +71,9 @@ export default function ArtikelView() {
                     </div>
                   </div>
                   <div className="article-actions">
-                    <button onClick={() => handleEdit(a.id)}><svg className="ic ic-sm"><use href="#i-edit" /></svg>Edit</button>
-                    <button onClick={() => toggleStatus(a.id)}><svg className="ic ic-sm"><use href={isDraf ? '#i-check' : '#i-eye-off'} /></svg>{isDraf ? 'Publikasikan' : 'Jadikan Draf'}</button>
-                    <button className="act-danger" onClick={() => handleDelete(a.id)}><svg className="ic ic-sm"><use href="#i-trash" /></svg>Hapus</button>
+                    <button onClick={() => handleEdit(a.id)}><i className="bi bi-pencil me-1"></i>Edit</button>
+                    <button onClick={() => toggleStatus(a.id)}><i className={isDraf ? 'bi bi-check2-circle me-1' : 'bi bi-eye-slash me-1'}></i>{isDraf ? 'Publikasikan' : 'Jadikan Draf'}</button>
+                    <button className="act-danger" onClick={() => handleDelete(a.id)}><i className="bi bi-trash me-1"></i>Hapus</button>
                   </div>
                 </div>
               );
@@ -85,7 +86,7 @@ export default function ArtikelView() {
         <div className="section-head"><h3>{editingId ? 'Edit Artikel' : 'Tulis Artikel Baru'}</h3></div>
         {editingId && (
           <div className="article-form-hint active">
-            <svg className="ic ic-sm"><use href="#i-edit" /></svg><span>Mengedit: {formData.judul}</span>
+            <i className="bi bi-pencil me-1"></i><span>Mengedit: {formData.judul}</span>
             <button type="button" onClick={handleNew}>Batal, tulis baru</button>
           </div>
         )}
@@ -97,7 +98,7 @@ export default function ArtikelView() {
           </select>
         </div>
         <div className="form-field" style={{ marginBottom: '12px' }}><label>Isi Artikel</label><textarea rows="5" value={formData.isi} onChange={(e) => setFormData({ ...formData, isi: e.target.value })} placeholder="Tulis isi artikel di sini..."></textarea></div>
-        <div className="upload-box" style={{ marginBottom: '14px' }}><svg className="ic"><use href="#i-image" /></svg><span><b>Tambah foto</b> pendukung (opsional)</span></div>
+        <div className="upload-box" style={{ marginBottom: '14px' }}><i className="bi bi-image me-2"></i><span><b>Tambah foto</b> pendukung (opsional)</span></div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => handleSave('draf')}>Simpan Draf</button>
           <button className="btn btn-violet" style={{ flex: 1, justifyContent: 'center' }} onClick={() => handleSave('publish')}>Publikasikan</button>

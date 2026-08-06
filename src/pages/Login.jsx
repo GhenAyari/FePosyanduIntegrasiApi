@@ -19,15 +19,8 @@ export default function Login({ onNavigate, onLogin }) {
     const un = username.trim().toLowerCase();
 
     if (loginType === 'warga') {
-      const match = WARGA_DB[un] || {
-        nama: username.trim() || 'Pak Herman',
-        posyandu: 'Melati',
-        password: '3172041234560001',
-        nik: '3172041234560001',
-        rt: '03',
-        hp: '0812-3456-7890'
-      };
-      onLogin({ ...match, role: 'warga', username: un || 'herman' });
+      const match = WARGA_DB[un] || WARGA_DB['herman'];
+      onLogin({ ...WARGA_DB['herman'], ...match, role: 'warga', username: un || 'herman' });
     } else {
       let match = USER_DB[un];
       if (!match) {
