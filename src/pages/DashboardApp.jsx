@@ -22,6 +22,7 @@ import WargaKalkulatorView from '../components/dashboard/WargaKalkulatorView';
 import WargaKieView from '../components/dashboard/WargaKieView';
 import WargaKontakView from '../components/dashboard/WargaKontakView';
 import WargaPasswordView from '../components/dashboard/WargaPasswordView';
+import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 
 const NAV = {
   kader: [
@@ -108,7 +109,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
   }
 
   const role = userAuth.role || 'kader';
-  const posyanduName = role === 'superadmin' ? 'Desa Loa Duri Ulu' : role === 'puskesmas' ? 'Lintas 9 Posyandu' : `Posyandu ${userAuth.posyandu}`;
+  const posyanduName = role === 'superadmin' ? 'Admin Loa Duri Ulu' : role === 'puskesmas' ? 'Petugas Puskesmas' : role === 'warga' ? `Warga Posyandu ${userAuth.posyandu}` : role === 'ketua' ? `Ketua Posyandu ${userAuth.posyandu}` : `Kader Posyandu ${userAuth.posyandu}`;
   const [currentView, setCurrentView] = useState(ROLE_HOME[role]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -185,27 +186,13 @@ export default function DashboardApp({ userAuth, onLogout }) {
 
         {/* MAIN */}
         <div className="main">
-          <div className="topbar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button className="icon-btn hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Buka menu">
-                <i className="bi bi-list" style={{ fontSize: '20px' }}></i>
-              </button>
-              <div>
-                <h2 id="pageTitle">{TITLES[currentView] ? TITLES[currentView][0] : 'Beranda'}</h2>
-                <div className="desc" id="pageDesc">{TITLES[currentView] ? TITLES[currentView][1] : ''}</div>
-              </div>
-            </div>
-            <div className="topbar-right">
-              <button className="icon-btn"><i className="bi bi-bell" style={{ fontSize: '16px' }}></i></button>
-              <div className="topbar-profile">
-                <div className="avatar-mini" id="topbarAvatar">{ROLE_AVATARS[role]}</div>
-                <div>
-                  <div className="who" id="topbarWho">{userAuth.nama}</div>
-                  <div className="role" id="topbarPosyandu">{posyanduName}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <DashboardNavbar
+            title={TITLES[currentView] ? TITLES[currentView][0] : 'Beranda'}
+            desc={TITLES[currentView] ? TITLES[currentView][1] : ''}
+            userAuth={userAuth}
+            role={role}
+            onOpenSidebar={() => setSidebarOpen(true)}
+          />
 
           <div className="content">
             <div className="view active" style={{ animation: 'fadein .25s ease' }}>
