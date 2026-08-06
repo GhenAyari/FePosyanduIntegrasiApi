@@ -6,15 +6,18 @@
   min-height: 100vh;
   background-color: #f9f9ff;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  width: 100%;
 }
 
 .kalkulator-main {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 32px 24px 64px;
   display: flex;
   flex-direction: column;
   gap: 32px;
+  box-sizing: border-box;
 }
 
 /* ===================================
@@ -24,7 +27,8 @@
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 20px;
-  height: 334px;
+  min-height: auto;
+  align-items: stretch;
 }
 
 /* Stats Card (dark) */
@@ -110,16 +114,16 @@
 /* Hero Welcome Card */
 .kalkulator-hero-welcome {
   border: 1px solid rgba(255,255,255,0.4);
-  border-radius: 8px;
-  background-color: rgba(255,255,255,0.8);
+  border-radius: 12px;
+  background-color: rgba(255,255,255,0.9);
   backdrop-filter: blur(4px);
-  padding: 32px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 32px;
-  overflow: hidden;
+  gap: 28px;
   position: relative;
+  overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
 
@@ -139,41 +143,43 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .kalkulator-hero-title {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.4px;
   color: #111c2c;
-  line-height: 40px;
+  line-height: 34px;
+  margin: 0;
 }
 
 .kalkulator-hero-subtitle {
-  font-size: 18px;
+  font-size: 14.5px;
   font-weight: 400;
   color: #42474e;
-  line-height: 28px;
-  max-width: 512px;
+  line-height: 22px;
+  max-width: 520px;
+  margin: 0;
 }
 
 .kalkulator-hero-actions {
   display: flex;
   flex-direction: row;
-  gap: 16px;
-  padding-top: 16px;
+  gap: 12px;
+  padding-top: 12px;
   flex-wrap: wrap;
 }
 
 .kalkulator-btn-primary {
   border-radius: 8px;
   background-color: #37618b;
-  padding: 16px 32px;
+  padding: 12px 24px;
   color: #fff;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.15s ease;
@@ -188,11 +194,11 @@
 .kalkulator-btn-secondary {
   border-radius: 8px;
   background-color: #dce3eb;
-  padding: 16px 32px;
-  color: #5e656c;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 24px;
+  padding: 12px 24px;
+  color: #42474e;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -204,8 +210,9 @@
 }
 
 .kalkulator-hero-img {
-  width: 251px;
-  height: 256px;
+  width: 220px;
+  height: auto;
+  max-height: 220px;
   object-fit: cover;
   border-radius: 8px;
   flex-shrink: 0;
@@ -729,99 +736,234 @@
 }
 
 /* ===================================
+   CARD & FORM UTILITIES
+   =================================== */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-head h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111c2c;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field.full {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #42474e;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 13.5px;
+  color: #0f172a;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: #37618b;
+  box-shadow: 0 0 0 3px rgba(55, 97, 139, 0.15);
+}
+
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+.grid-2,
+.kalkulator-calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.food-log-input-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.food-select {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #cbd5e1);
+  font-size: 12px;
+}
+
+.food-qty-input {
+  width: 70px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #cbd5e1);
+  font-size: 12px;
+}
+
+/* ===================================
    MOBILE RESPONSIVE
-=================================== */
+   =================================== */
 
-@media (max-width:640px){
-
-  .kalkulator-main{
-      padding:16px;
-      padding-top:16px;
-      padding-bottom:24px;
-      gap:20px;
+@media (max-width: 900px) {
+  .kalkulator-main {
+    padding: 24px 16px 48px;
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  /* hero */
-
-  .kalkulator-stats-card{
-      width:100%;
-      padding:20px;
+  .kalkulator-hero-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 16px !important;
   }
 
-  .kalkulator-hero-grid{
-      grid-template-columns:1fr;
-      height:auto;
+  .kalkulator-stats-card {
+    width: 100% !important;
+    padding: 20px 16px !important;
+    box-sizing: border-box !important;
   }
 
-  .kalkulator-hero-welcome{
-      flex-direction:column;
-      padding:18px;
-      gap:18px;
-      text-align:center;
+  .kalkulator-hero-welcome {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 20px 16px !important;
+    gap: 16px !important;
+    text-align: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  .kalkulator-hero-img{
-      width:100%;
-      height:190px;
-      order:-1;
+  .kalkulator-hero-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  .kalkulator-hero-text{
-      align-items:center;
+  .kalkulator-hero-title {
+    font-size: 20px !important;
+    line-height: 28px !important;
+    text-align: center !important;
+    margin: 0 !important;
   }
 
-  .kalkulator-hero-title{
-      font-size:28px;
-      line-height:1.25;
+  .kalkulator-hero-subtitle {
+    font-size: 13.5px !important;
+    line-height: 20px !important;
+    text-align: center !important;
+    max-width: 100% !important;
+    margin: 0 !important;
   }
 
-  .kalkulator-hero-subtitle{
-      font-size:15px;
-      line-height:1.6;
-  }
-
-  /* tombol hero */
-
-  .kalkulator-hero-actions{
-      width:100%;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      padding-top:8px;
+  .kalkulator-hero-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
   }
 
   .kalkulator-btn-primary,
-  .kalkulator-btn-secondary{
-
-      width:100%;
-      padding:14px 8px;
-      font-size:15px;
-      border-radius:14px;
+  .kalkulator-btn-secondary {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    font-size: 13.5px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
   }
 
-  /* card */
-
-  .kalkulator-cards-grid{
-      grid-template-columns:1fr;
-      gap:18px;
+  .kalkulator-hero-img {
+    width: 100% !important;
+    max-height: 180px !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+    order: -1 !important;
   }
 
-  .kalkulator-card{
-      padding:18px;
+  .grid-2,
+  .kalkulator-calc-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 16px !important;
   }
 
-  .kalkulator-card-title{
-      font-size:20px;
+  .form-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 12px !important;
   }
 
-  .kalkulator-field-row{
-      flex-direction:column;
-      gap:16px;
+  .card {
+    width: 100% !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
   }
 
-  .kalkulator-history-card,
-  .kalkulator-feedback-card{
-      padding:18px;
+  .food-log-input-group {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
   }
 
+  .food-select,
+  .food-qty-input,
+  .food-add-btn {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .kalkulator-feedback-card {
+    width: 100% !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
 }

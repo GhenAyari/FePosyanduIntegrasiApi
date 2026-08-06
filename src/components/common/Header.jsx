@@ -164,23 +164,23 @@ export default function Header({ activePage = 'beranda', onNavigate, onDarurat }
 
         </div>
 
-        <button onClick={(e)=>handleClick(e,"beranda")}>
+        <button className={activePage === "beranda" ? "active" : ""} onClick={(e)=>handleClick(e,"beranda")}>
           <i className="bi bi-house-door-fill" style={{ marginRight: '8px' }}></i> Beranda
         </button>
 
-        <button onClick={(e)=>handleClick(e,"profil")}>
+        <button className={activePage === "profil" ? "active" : ""} onClick={(e)=>handleClick(e,"profil")}>
           <i className="bi bi-people-fill" style={{ marginRight: '8px' }}></i> Profil Posyandu
         </button>
 
-        <button onClick={(e)=>handleClick(e,"artikel")}>
+        <button className={activePage === "artikel" ? "active" : ""} onClick={(e)=>handleClick(e,"artikel")}>
           <i className="bi bi-journal-text" style={{ marginRight: '8px' }}></i> Artikel
         </button>
 
-        <button onClick={(e)=>handleClick(e,"jadwal")}>
+        <button className={activePage === "jadwal" ? "active" : ""} onClick={(e)=>handleClick(e,"jadwal")}>
           <i className="bi bi-calendar-event" style={{ marginRight: '8px' }}></i> Jadwal
         </button>
 
-        <button onClick={(e)=>handleClick(e,"kalkulator")}>
+        <button className={activePage === "kalkulator" ? "active" : ""} onClick={(e)=>handleClick(e,"kalkulator")}>
           <i className="bi bi-calculator-fill" style={{ marginRight: '8px' }}></i> Kalkulator
         </button>
 
@@ -190,7 +190,7 @@ export default function Header({ activePage = 'beranda', onNavigate, onDarurat }
             if (onDarurat) onDarurat();
             else if (onNavigate) onNavigate('kontak');
           }}
-          className="darurat-btn-sidebar"
+          className={`darurat-btn-sidebar ${activePage === "kontak" || activePage === "darurat" ? "active" : ""}`}
         >
           <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: '8px' }}></i> Darurat
         </button>
