@@ -106,8 +106,8 @@
 .hero-badge {
   font-size: 28px;
   font-weight: 700;
-  color: #235078;
-  background-color: var(--color-primary-light);
+  color: #ffffff !important;
+  background-color: var(--color-primary, #37618b);
   padding: 4px 16px;
   border-radius: 8px;
 }
