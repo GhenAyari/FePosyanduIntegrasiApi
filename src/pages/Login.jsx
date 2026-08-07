@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // Tambahkan import axios
+import axios from 'axios';
 import logo from '../assets/images/common/logo-header.jpeg';
 
 export default function Login({ onNavigate, onLogin }) {
   const [loginType, setLoginType] = useState('pengelola');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State baru untuk fitur mata
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // State baru untuk efek loading
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTypeChange = (type) => {
     setLoginType(type);
     setError('');
     setUsername('');
     setPassword('');
+    setShowPassword(false); // Kembalikan sandi menjadi tertutup saat ganti tab
   };
 
   const handleLogin = async () => {
@@ -41,12 +43,10 @@ export default function Login({ onNavigate, onLogin }) {
       // 4. CEK SILANG TIPE LOGIN VS JABATAN ASLI
       // ==========================================
       if (loginType === 'warga' && user.role !== 'warga') {
-        // Jika tab Warga tapi jabatannya pengelola (kader/ketua/dll)
         throw new Error('Gagal: Anda menggunakan akun Pengelola. Silakan pindah ke tab "Akun Pengelola".');
       }
 
       if (loginType === 'pengelola' && user.role === 'warga') {
-        // Jika tab Pengelola tapi jabatannya hanya warga biasa
         throw new Error('Gagal: Anda menggunakan akun Warga. Silakan pindah ke tab "Akun Warga".');
       }
       // ==========================================
@@ -59,12 +59,10 @@ export default function Login({ onNavigate, onLogin }) {
 
     } catch (err) {
       console.error("Gagal Login:", err);
-
-      // Tangkap pesan error kustom kita sendiri, atau error dari Laravel
       if (err.message && err.message.startsWith('Gagal:')) {
-        setError(err.message); // Tampilkan error cek silang
+        setError(err.message);
       } else if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message); // Error dari Laravel (sandi salah)
+        setError(err.response.data.message);
       } else {
         setError('Koneksi ke server gagal atau Username/Sandi salah.');
       }
@@ -99,25 +97,63 @@ export default function Login({ onNavigate, onLogin }) {
           </button>
         </div>
 
+        {/* Form Field: Username (Sekarang dinamis) */}
         <div className="field">
-          <label id="usernameLabel">{loginType === 'warga' ? 'Nama Lengkap / Username' : 'Username'}</label>
+          <label id="usernameLabel">
+            Username {loginType === 'warga' && '(Gunakan NIK)'}
+          </label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder={loginType === 'warga' ? 'mis. Herman' : 'mis. kader.melati'}
-            disabled={isLoading} // Kunci input saat loading
+            placeholder={loginType === 'warga' ? 'Masukkan 16 digit NIK' : 'mis. kader.melati'}
+            disabled={isLoading}
           />
         </div>
+
+        {/* Form Field: Password (Dengan fitur Show/Hide) */}
         <div className="field">
           <label id="passwordLabel">{loginType === 'warga' ? 'Kata Sandi (default: NIK)' : 'Kata Sandi'}</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={isLoading} // Kunci input saat loading
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={isLoading}
+              style={{ width: '100%', paddingRight: '40px' }} // Beri ruang di kanan agar teks tidak tertimpa ikon
+            />
+            {/* Tombol Mata */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                background: 'none',
+                border: 'none',
+                padding: '0',
+                cursor: 'pointer',
+                color: 'var(--ink-soft)', // Sesuaikan dengan warna teks sekunder aplikasi
+                display: 'flex'
+              }}
+              title={showPassword ? 'Sembunyikan Sandi' : 'Tampilkan Sandi'}
+            >
+              {showPassword ? (
+                // Ikon Eye-Off (Mata Disilang)
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              ) : (
+                // Ikon Eye (Mata Terbuka)
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -129,7 +165,6 @@ export default function Login({ onNavigate, onLogin }) {
           </p>
         )}
 
-        {/* Tombol otomatis berubah teks saat sedang loading */}
         <button className="btn-primary" onClick={handleLogin} disabled={isLoading}>
           {isLoading ? 'Mencocokkan Data... ⏳' : 'Masuk'}
         </button>
