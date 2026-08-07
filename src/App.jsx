@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // Tambahkan ini untuk memanggil API
 import Beranda from './pages/Beranda';
 import ProfilPosyandu from './pages/ProfilPosyandu';
 import ArtikelKesehatan from './pages/ArtikelKesehatan';
@@ -40,9 +41,32 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Darurat button → navigate to kontak page
   const handleOpenDarurat = () => {
     handleNavigate('kontak');
+  };
+
+  // --- FUNGSI BARU UNTUK LOGOUT ---
+  const handleLogout = async () => {
+    try {
+      // 1. Ambil token dari brankas browser
+      const token = localStorage.getItem('auth_token');
+
+      // 2. Jika token ada, beritahu Laravel untuk menghancurkannya
+      if (token) {
+        await axios.post('http://127.0.0.1:8000/api/logout', {}, {
+          headers: {
+            Authorization: `Bearer ${token}` // Kirim token sebagai tiket otorisasi
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Gagal logout dari server:", error);
+    } finally {
+      // 3. Apapun yang terjadi (berhasil/gagal ke API), tetap bersihkan data lokal
+      localStorage.removeItem('auth_token'); // Hapus token dari brankas
+      setUserAuth(null);                     // Hapus data user dari memori React
+      handleNavigate('login');               // Arahkan kembali ke halaman login
+    }
   };
 
   const pageProps = { activePage, onNavigate: handleNavigate, onDarurat: handleOpenDarurat };
@@ -52,7 +76,7 @@ function App() {
       {activePage === 'login' ? (
         <Login onNavigate={handleNavigate} onLogin={(user) => { setUserAuth(user); handleNavigate('dashboard'); }} />
       ) : activePage === 'dashboard' ? (
-        <DashboardApp userAuth={userAuth} onLogout={() => { setUserAuth(null); handleNavigate('login'); }} />
+        < DashboardApp userAuth={userAuth} onLogout={handleLogout} />
       ) : activePage === 'profil' ? (
         <ProfilPosyandu {...pageProps} />
       ) : activePage === 'artikel' ? (

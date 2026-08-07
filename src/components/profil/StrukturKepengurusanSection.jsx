@@ -15,7 +15,14 @@ export default function StrukturKepengurusanSection() {
     <div className="struktur-card">
       <div className="struktur-header-row">
         <h2 className="section-title">Struktur Kepengurusan</h2>
-        <button type="button" className="btn-outline-sm">
+
+        {/* PERUBAHAN: Tag <button> diubah menjadi tag <a> dengan atribut href dan download */}
+        <a
+          href="/dokumen/struktur-pengurus.pdf"
+          download="Struktur_Pengurus_Posyandu_LDU.pdf"
+          className="btn-outline-sm"
+          style={{ textDecoration: 'none' }} // Menghilangkan garis bawah bawaan link
+        >
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
             <path
               d="M10 13.3333L5.83333 9.16667L7.05 7.9L9.16667 10.0167V0H10.8333V10.0167L12.95 7.9L14.1667 9.16667L10 13.3333ZM3.33333 16.6667C2.875 16.6667 2.48278 16.5031 2.15667 16.1758C1.83056 15.8486 1.6672 15.4564 1.66667 15V12.5H3.33333V15H16.6667V12.5H18.3333V15C18.3333 15.4583 18.17 15.8508 17.8433 16.1775C17.5167 16.5042 17.1242 16.6672 16.6667 16.6667H3.33333Z"
@@ -23,7 +30,7 @@ export default function StrukturKepengurusanSection() {
             />
           </svg>
           Unduh Struktur (PDF)
-        </button>
+        </a>
       </div>
 
       <div className="struktur-members-row">

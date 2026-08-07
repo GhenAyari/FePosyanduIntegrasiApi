@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { USER_DB, WARGA_DB } from '../utils/mockData';
+import axios from 'axios'; // Tambahkan import axios
 import logo from '../assets/images/common/logo-header.jpeg';
 
 export default function Login({ onNavigate, onLogin }) {
@@ -7,6 +7,7 @@ export default function Login({ onNavigate, onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // State baru untuk efek loading
 
   const handleTypeChange = (type) => {
     setLoginType(type);
@@ -15,21 +16,43 @@ export default function Login({ onNavigate, onLogin }) {
     setPassword('');
   };
 
-  const handleLogin = () => {
-    const un = username.trim().toLowerCase();
+  const handleLogin = async () => {
+    // 1. Validasi kosong
+    if (!username || !password) {
+      setError('Username dan kata sandi tidak boleh kosong.');
+      return;
+    }
 
-    if (loginType === 'warga') {
-      const match = WARGA_DB[un] || WARGA_DB['herman'];
-      onLogin({ ...WARGA_DB['herman'], ...match, role: 'warga', username: un || 'herman' });
-    } else {
-      let match = USER_DB[un];
-      if (!match) {
-        if (un.includes('superadmin') || un.includes('admin')) match = USER_DB['superadmin'];
-        else if (un.includes('ketua')) match = USER_DB['ketua'];
-        else if (un.includes('puskesmas')) match = USER_DB['puskesmas'];
-        else match = USER_DB['kader.melati'];
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 2. Tembak API Login Laravel yang sudah kamu buat
+      const response = await axios.post('http://127.0.0.1:8000/api/login', {
+        username: username,
+        password: password
+      });
+
+      // 3. Ekstrak data dari JSON yang dibalas Laravel
+      const token = response.data.data.token;
+      const user = response.data.data.user;
+
+      // 4. Simpan Token ke brankas browser (localStorage)
+      localStorage.setItem('auth_token', token);
+
+      // 5. Kirim data user aslinya ke App.jsx agar halaman berpindah
+      onLogin(user);
+
+    } catch (err) {
+      console.error("Gagal Login:", err);
+      // Tangkap pesan error dari backend jika password salah atau user tidak ada
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Koneksi ke server gagal atau Username/Sandi salah.');
       }
-      onLogin({ ...match, username: un || match.username || 'kader.melati' });
+    } finally {
+      setIsLoading(false); // Matikan efek loading
     }
   };
 
@@ -43,16 +66,16 @@ export default function Login({ onNavigate, onLogin }) {
         <p className="login-sub">Masuk untuk mencatat & melaporkan kegiatan Posyandu</p>
 
         <div className="role-toggle">
-          <button 
-            className={`role-btn ${loginType === 'pengelola' ? 'active' : ''}`} 
-            onClick={() => handleTypeChange('pengelola')} 
+          <button
+            className={`role-btn ${loginType === 'pengelola' ? 'active' : ''}`}
+            onClick={() => handleTypeChange('pengelola')}
             style={{ flex: '1 1 45%' }}
           >
             Akun Pengelola
           </button>
-          <button 
-            className={`role-btn ${loginType === 'warga' ? 'active' : ''}`} 
-            onClick={() => handleTypeChange('warga')} 
+          <button
+            className={`role-btn ${loginType === 'warga' ? 'active' : ''}`}
+            onClick={() => handleTypeChange('warga')}
             style={{ flex: '1 1 45%' }}
           >
             Akun Warga
@@ -61,23 +84,25 @@ export default function Login({ onNavigate, onLogin }) {
 
         <div className="field">
           <label id="usernameLabel">{loginType === 'warga' ? 'Nama Lengkap / Username' : 'Username'}</label>
-          <input 
-            type="text" 
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
-            placeholder={loginType === 'warga' ? 'mis. Herman' : 'mis. kader.melati'} 
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={loginType === 'warga' ? 'mis. Herman' : 'mis. kader.melati'}
+            disabled={isLoading} // Kunci input saat loading
           />
         </div>
         <div className="field">
           <label id="passwordLabel">{loginType === 'warga' ? 'Kata Sandi (default: NIK)' : 'Kata Sandi'}</label>
-          <input 
-            type="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            placeholder="••••••••" 
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            disabled={isLoading} // Kunci input saat loading
           />
         </div>
-        
+
         {error && (
           <p className="login-error" style={{ display: 'flex' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -86,19 +111,22 @@ export default function Login({ onNavigate, onLogin }) {
             {error}
           </p>
         )}
-        
-        <button className="btn-primary" onClick={handleLogin}>Masuk</button>
-        
+
+        {/* Tombol otomatis berubah teks saat sedang loading */}
+        <button className="btn-primary" onClick={handleLogin} disabled={isLoading}>
+          {isLoading ? 'Mencocokkan Data... ⏳' : 'Masuk'}
+        </button>
+
         <p className="login-foot" id="loginFootNote">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="4" y="10" width="16" height="10" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/>
+            <rect x="4" y="10" width="16" height="10" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" />
           </svg>
           Sistem mengenali Posyandu & peran Anda otomatis dari username.
         </p>
-        
+
         <button className="public-link" onClick={() => onNavigate && onNavigate('beranda')}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 21s7-6.7 7-12a7 7 0 0 0-14 0c0 5.3 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>
+            <path d="M12 21s7-6.7 7-12a7 7 0 0 0-14 0c0 5.3 7 12 7 12Z" /><circle cx="12" cy="9" r="2.5" />
           </svg>
           Lihat Halaman Publik (Tanpa Login)
         </button>
