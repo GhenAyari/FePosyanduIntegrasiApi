@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // Tambahkan ini untuk memanggil API
+import axios from 'axios';
 import Beranda from './pages/Beranda';
 import ProfilPosyandu from './pages/ProfilPosyandu';
 import ArtikelKesehatan from './pages/ArtikelKesehatan';
@@ -25,13 +25,38 @@ function App() {
   };
 
   const [activePage, setActivePage] = useState(getPageFromHash());
-  const [userAuth, setUserAuth] = useState(null); // Stores logged in user data
+  const [userAuth, setUserAuth] = useState(null);
+
+  // State pelindung untuk mencegah render sebelum tiket divalidasi
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const handleHashChange = () => {
       setActivePage(getPageFromHash());
     };
     window.addEventListener('hashchange', handleHashChange);
+
+    // FUNGSI BARU: Pemulihan Sesi (Session Persistence)
+    const verifySession = async () => {
+      const token = localStorage.getItem('auth_token');
+
+      if (token) {
+        try {
+          // Inspeksi token ke backend untuk memastikan belum expired/diblokir
+          const response = await axios.get('http://127.0.0.1:8000/api/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUserAuth(response.data.data);
+        } catch (error) {
+          console.error("Token tidak valid / expired:", error);
+          localStorage.removeItem('auth_token'); // Buang token palsu/usang
+        }
+      }
+      setIsCheckingAuth(false); // Buka layar setelah pemeriksaan selesai
+    };
+
+    verifySession();
+
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
@@ -45,38 +70,36 @@ function App() {
     handleNavigate('kontak');
   };
 
-  // --- FUNGSI BARU UNTUK LOGOUT ---
   const handleLogout = async () => {
     try {
-      // 1. Ambil token dari brankas browser
       const token = localStorage.getItem('auth_token');
-
-      // 2. Jika token ada, beritahu Laravel untuk menghancurkannya
       if (token) {
         await axios.post('http://127.0.0.1:8000/api/logout', {}, {
-          headers: {
-            Authorization: `Bearer ${token}` // Kirim token sebagai tiket otorisasi
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
       }
     } catch (error) {
       console.error("Gagal logout dari server:", error);
     } finally {
-      // 3. Apapun yang terjadi (berhasil/gagal ke API), tetap bersihkan data lokal
-      localStorage.removeItem('auth_token'); // Hapus token dari brankas
-      setUserAuth(null);                     // Hapus data user dari memori React
-      handleNavigate('login');               // Arahkan kembali ke halaman login
+      localStorage.removeItem('auth_token');
+      setUserAuth(null);
+      handleNavigate('login');
     }
   };
 
   const pageProps = { activePage, onNavigate: handleNavigate, onDarurat: handleOpenDarurat };
+
+  // Tampilkan layar loading putih (atau animasi) selama proses inspeksi berlangsung
+  if (isCheckingAuth) {
+    return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Memverifikasi keamanan sesi...</div>;
+  }
 
   return (
     <>
       {activePage === 'login' ? (
         <Login onNavigate={handleNavigate} onLogin={(user) => { setUserAuth(user); handleNavigate('dashboard'); }} />
       ) : activePage === 'dashboard' ? (
-        < DashboardApp userAuth={userAuth} onLogout={handleLogout} />
+        <DashboardApp userAuth={userAuth} onLogout={handleLogout} />
       ) : activePage === 'profil' ? (
         <ProfilPosyandu {...pageProps} />
       ) : activePage === 'artikel' ? (

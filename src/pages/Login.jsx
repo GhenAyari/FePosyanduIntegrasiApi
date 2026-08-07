@@ -27,32 +27,49 @@ export default function Login({ onNavigate, onLogin }) {
     setError('');
 
     try {
-      // 2. Tembak API Login Laravel yang sudah kamu buat
+      // 2. Tembak API Login Laravel
       const response = await axios.post('http://127.0.0.1:8000/api/login', {
         username: username,
         password: password
       });
 
-      // 3. Ekstrak data dari JSON yang dibalas Laravel
+      // 3. Ekstrak data dari JSON
       const token = response.data.data.token;
       const user = response.data.data.user;
 
-      // 4. Simpan Token ke brankas browser (localStorage)
+      // ==========================================
+      // 4. CEK SILANG TIPE LOGIN VS JABATAN ASLI
+      // ==========================================
+      if (loginType === 'warga' && user.role !== 'warga') {
+        // Jika tab Warga tapi jabatannya pengelola (kader/ketua/dll)
+        throw new Error('Gagal: Anda menggunakan akun Pengelola. Silakan pindah ke tab "Akun Pengelola".');
+      }
+
+      if (loginType === 'pengelola' && user.role === 'warga') {
+        // Jika tab Pengelola tapi jabatannya hanya warga biasa
+        throw new Error('Gagal: Anda menggunakan akun Warga. Silakan pindah ke tab "Akun Warga".');
+      }
+      // ==========================================
+
+      // 5. Jika lolos cek silang, simpan Token ke brankas
       localStorage.setItem('auth_token', token);
 
-      // 5. Kirim data user aslinya ke App.jsx agar halaman berpindah
+      // 6. Kirim data user aslinya ke App.jsx agar halaman berpindah
       onLogin(user);
 
     } catch (err) {
       console.error("Gagal Login:", err);
-      // Tangkap pesan error dari backend jika password salah atau user tidak ada
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
+
+      // Tangkap pesan error kustom kita sendiri, atau error dari Laravel
+      if (err.message && err.message.startsWith('Gagal:')) {
+        setError(err.message); // Tampilkan error cek silang
+      } else if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message); // Error dari Laravel (sandi salah)
       } else {
         setError('Koneksi ke server gagal atau Username/Sandi salah.');
       }
     } finally {
-      setIsLoading(false); // Matikan efek loading
+      setIsLoading(false);
     }
   };
 

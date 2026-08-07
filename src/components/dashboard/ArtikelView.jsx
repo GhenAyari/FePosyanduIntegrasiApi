@@ -79,7 +79,7 @@ export default function ArtikelView() {
       if (formData.foto) data.append('foto', formData.foto);
 
       if (editingId) {
-        data.append('_method', 'PUT'); // Syarat Laravel untuk form-data saat Update
+        // Blok update tanpa _method: 'PUT'
         await axios.post(`http://127.0.0.1:8000/api/artikels/${editingId}`, data, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         });
@@ -105,8 +105,8 @@ export default function ArtikelView() {
       const newStatus = currentStatus === 'draf' ? 'dipublikasikan' : 'draf';
       const token = localStorage.getItem('auth_token');
 
+      // Blok ubah status tanpa _method: 'PUT'
       await axios.post(`http://127.0.0.1:8000/api/artikels/${id}`, {
-        _method: 'PUT',
         status: newStatus
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -162,8 +162,24 @@ export default function ArtikelView() {
 
               return (
                 <div key={a.id} className={`article-card ${isDraf ? 'is-draft' : ''} ${editingId === a.id ? 'editing' : ''}`}>
-                  <div className="article-thumb" style={{ background: `var(--${color}-bg)`, color: `var(--${color}-deep)` }}>
-                    <i className={`${bsIcon}`} style={{ fontSize: '22px' }}></i>
+                  <div
+                    className="article-thumb"
+                    style={{
+                      background: `var(--${color}-bg)`,
+                      color: `var(--${color}-deep)`,
+                      overflow: 'hidden',
+                      padding: a.path_foto ? '0' : undefined // Hilangkan padding jika ada gambar
+                    }}
+                  >
+                    {a.path_foto ? (
+                      <img
+                        src={`http://127.0.0.1:8000/storage/${a.path_foto}`}
+                        alt={a.judul}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <i className={`${bsIcon}`} style={{ fontSize: '22px' }}></i>
+                    )}
                   </div>
                   <div className="article-body">
                     <span className="article-cat" style={{ color: `var(--${color}-deep)` }}>{a.kategori}</span>
