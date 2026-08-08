@@ -9,16 +9,18 @@ const ROLE_AVATARS = {
 };
 
 export default function DashboardNavbar({ title, desc, userAuth, role, onOpenSidebar }) {
+  const namaPosyandu = userAuth?.posyandu?.nama || userAuth?.posyandu || '';
+
   const posyanduName =
     role === 'superadmin'
       ? 'Admin Loa Duri Ulu'
       : role === 'puskesmas'
-      ? 'Petugas Puskesmas'
-      : role === 'warga'
-      ? `Warga Posyandu ${userAuth?.posyandu || ''}`
-      : role === 'ketua'
-      ? `Ketua Posyandu ${userAuth?.posyandu || ''}`
-      : `Kader Posyandu ${userAuth?.posyandu || ''}`;
+        ? 'Petugas Puskesmas'
+        : role === 'warga'
+          ? `Warga Posyandu ${namaPosyandu}`
+          : role === 'ketua'
+            ? `Ketua Posyandu ${namaPosyandu}`
+            : `Kader Posyandu ${namaPosyandu}`;
 
   return (
     <div className="topbar">

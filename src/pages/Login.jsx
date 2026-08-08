@@ -54,6 +54,9 @@ export default function Login({ onNavigate, onLogin }) {
       // 5. Jika lolos cek silang, simpan Token ke brankas
       localStorage.setItem('auth_token', token);
 
+      // TAMBAHKAN INI: Simpan data user (termasuk role & posyandu) ke LocalStorage
+      localStorage.setItem('auth_user', JSON.stringify(user));
+
       // 6. Kirim data user aslinya ke App.jsx agar halaman berpindah
       onLogin(user);
 
