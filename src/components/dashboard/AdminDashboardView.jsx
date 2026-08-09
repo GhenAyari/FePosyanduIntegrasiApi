@@ -10,18 +10,14 @@ export default function AdminDashboardView() {
   const [pengaduanList, setPengaduanList] = useState([]);
   const [formulirList, setFormulirList] = useState([]);
   const [waktuUpdates, setWaktuUpdates] = useState({});
-
-  // STATE BARU UNTUK GRAFIK STATISTIK
   const [stats, setStats] = useState({ pengaduan: [], formulir: [] });
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // State untuk Pop-up Modal
   const [selectedForm, setSelectedForm] = useState(null);
   const [selectedPengaduan, setSelectedPengaduan] = useState(null);
 
-  // Data 9 Posyandu
   const daftarPosyandu = [
     { id: 1, nama: 'Melati', jadwal: 'Tgl. 3' },
     { id: 2, nama: 'Rukun Lestari', jadwal: 'Tgl. 4' },
@@ -37,7 +33,6 @@ export default function AdminDashboardView() {
   const BIDANG_MAP = ['pendidikan', 'pekerjaan_umum', 'perumahan_rakyat', 'trantibumlinmas', 'sosial'];
   const BIDANG_NAMA = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'];
 
-  // === AMBIL WAKTU TERAKHIR UPDATE & DATA STATISTIK ===
   useEffect(() => {
     if (viewMode === 'list') {
       const fetchDataAwal = async () => {
@@ -67,13 +62,11 @@ export default function AdminDashboardView() {
   const maxFormulir = stats.formulir.length > 0 ? Math.max(...stats.formulir.map(item => item.total)) : 1;
   const formatNama = (text) => text ? text.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '-';
 
-  // === FUNGSI FETCH DATA DETAIL ===
   const openDetail = async (posyandu) => {
     setSelectedPosyandu(posyandu);
     setViewMode('detail');
     setTab(0);
     setMessage({ type: '', text: '' });
-
     setIsLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -84,7 +77,6 @@ export default function AdminDashboardView() {
       setPengaduanList(resPengaduan.data.data);
       setFormulirList(resFormulir.data.data);
     } catch (err) {
-      console.error(err);
       setMessage({ type: 'error', text: 'Gagal memuat data laporan.' });
     } finally {
       setIsLoading(false);
@@ -99,16 +91,12 @@ export default function AdminDashboardView() {
     setMessage({ type: '', text: '' });
   };
 
-  // === FUNGSI UBAH STATUS PENGADUAN ===
   const handleUbahStatus = async (pengaduanId, statusBaru) => {
     const dataLama = [...pengaduanList];
     setPengaduanList(pengaduanList.map(item => item.id === pengaduanId ? { ...item, status: statusBaru } : item));
-
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.patch(`http://127.0.0.1:8000/api/admin/pengaduan/${pengaduanId}/status`,
-        { status: statusBaru }, { headers: { 'Authorization': `Bearer ${token}` } }
-      );
+      await axios.patch(`http://127.0.0.1:8000/api/admin/pengaduan/${pengaduanId}/status`, { status: statusBaru }, { headers: { 'Authorization': `Bearer ${token}` } });
       setMessage({ type: 'success', text: 'Status laporan diperbarui.' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -117,16 +105,11 @@ export default function AdminDashboardView() {
     }
   };
 
-  // === FUNGSI HAPUS FORMULIR ===
   const handleHapusFormulir = async (id) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus data formulir ini secara permanen?")) return;
-
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.delete(`http://127.0.0.1:8000/api/admin/formulir/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      // Hapus data dari state (UI langsung update)
+      await axios.delete(`http://127.0.0.1:8000/api/admin/formulir/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       setFormulirList(formulirList.filter(item => item.id !== id));
       setMessage({ type: 'success', text: 'Data formulir berhasil dihapus.' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -135,27 +118,53 @@ export default function AdminDashboardView() {
     }
   };
 
-  // === FUNGSI HAPUS PENGADUAN ===
   const handleHapusPengaduan = async (id) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus data pengaduan ini secara permanen?")) return;
-
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.delete(`http://127.0.0.1:8000/api/admin/pengaduan/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      // Hapus data dari state (UI langsung update)
+      await axios.delete(`http://127.0.0.1:8000/api/admin/pengaduan/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       setPengaduanList(pengaduanList.filter(item => item.id !== id));
       setMessage({ type: 'success', text: 'Data pengaduan berhasil dihapus.' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      const errorMessage = err.response?.data?.pesan || 'Gagal menghapus data pengaduan.';
-      setMessage({ type: 'error', text: errorMessage });
+      setMessage({ type: 'error', text: err.response?.data?.pesan || 'Gagal menghapus data pengaduan.' });
     }
   };
 
+  // Data terfilter sesuai Tab Aktif (Hanya untuk Detail Mode)
+  const dataFormulirAktif = formulirList.filter(item => item.bidang === BIDANG_MAP[tab]);
+  const dataPengaduanAktif = pengaduanList.filter(item => item.bidang === BIDANG_MAP[tab]);
+
   return (
     <>
+      {/* === CSS KHUSUS UNTUK EKSPOR PDF === */}
+      <style>{`
+        /* Sembunyikan elemen dokumen cetak di layar monitor normal */
+        #dokumen-cetak { display: none; }
+
+        @media print {
+          /* Sembunyikan SEMUA elemen web saat di-print */
+          body * { visibility: hidden; }
+          
+          /* KECUALI dokumen cetak khusus ini */
+          #dokumen-cetak, #dokumen-cetak * { visibility: visible; }
+          #dokumen-cetak { 
+            display: block !important; 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            padding: 20px;
+            font-family: Arial, sans-serif;
+          }
+          
+          /* Styling Khusus Tabel Laporan Cetak */
+          .tabel-cetak { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+          .tabel-cetak th, .tabel-cetak td { border: 1px solid #000; padding: 8px; text-align: left; }
+          .tabel-cetak th { background-color: #f2f2f2; }
+        }
+      `}</style>
+
       {message.text && (
         <div style={{ padding: '12px', marginBottom: '16px', borderRadius: '6px', fontSize: '14px', backgroundColor: message.type === 'error' ? '#fde8e8' : '#e1fce8', color: message.type === 'error' ? '#c81e1e' : '#036c2a' }}>
           <b>Info Sistem:</b> {message.text}
@@ -167,7 +176,6 @@ export default function AdminDashboardView() {
           ========================================= */}
       {viewMode === 'list' && (
         <div>
-          {/* GRAFIK ANALITIK */}
           <div className="grid grid-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
@@ -206,9 +214,7 @@ export default function AdminDashboardView() {
                     return (
                       <div key={index}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px', fontWeight: 'bold', color: '#444' }}>
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }} title={item.sub_bidang}>
-                            {item.sub_bidang}
-                          </span>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }} title={item.sub_bidang}>{item.sub_bidang}</span>
                           <span style={{ color: 'var(--violet-deep)' }}>{item.total} Data</span>
                         </div>
                         <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden' }}>
@@ -224,7 +230,6 @@ export default function AdminDashboardView() {
             </div>
           </div>
 
-          {/* TABEL POSYANDU */}
           <div className="card">
             <div className="section-head"><h3>Status Laporan 9 Posyandu</h3></div>
             <div className="table-responsive">
@@ -258,17 +263,24 @@ export default function AdminDashboardView() {
       )}
 
       {/* =========================================
-          MODE 2: DETAIL PER POSYANDU
+          MODE 2: DETAIL PER POSYANDU & EKSPOR
           ========================================= */}
       {viewMode === 'detail' && selectedPosyandu && (
         <div>
-          <button className="btn btn-outline" onClick={closeDetail} style={{ marginBottom: '16px' }}>
-            <i className="bi bi-arrow-left me-2"></i>Kembali ke Daftar Posyandu
-          </button>
+          {/* HEADER TOMBOL */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <button className="btn btn-outline" onClick={closeDetail}>
+              <i className="bi bi-arrow-left me-2"></i>Kembali ke Daftar
+            </button>
+            <button className="btn btn-violet" onClick={() => window.print()}>
+              <i className="bi bi-file-earmark-pdf-fill me-2"></i>Ekspor PDF Lengkap
+            </button>
+          </div>
 
+          {/* TAMPILAN LAYAR MONITOR */}
           <div className="card" style={{ backgroundColor: '#f8f9fa' }}>
             <div className="section-head">
-              <h3><i className="bi bi-building me-2"></i>Rincian Data - Posyandu {selectedPosyandu.nama}</h3>
+              <h3><i className="bi bi-building me-2"></i>Laporan Posyandu {selectedPosyandu.nama} - Bidang {BIDANG_NAMA[tab]}</h3>
             </div>
 
             <div className="tabs" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
@@ -280,42 +292,27 @@ export default function AdminDashboardView() {
             </div>
 
             <div className="grid grid-2">
-
               {/* --- KIRI: REKAP FORMULIR --- */}
               <div className="card">
-                <div className="section-head">
-                  <h3 style={{ color: 'var(--violet-deep)' }}><i className="bi bi-journal-text me-2"></i>Data Identifikasi</h3>
-                </div>
+                <div className="section-head"><h3 style={{ color: 'var(--violet-deep)' }}><i className="bi bi-journal-text me-2"></i>Data Identifikasi</h3></div>
                 <div className="table-responsive">
                   <table className="table">
-                    <thead>
-                      <tr><th>Tgl</th><th>Sub-Bidang</th><th>Aksi</th></tr>
-                    </thead>
+                    <thead><tr><th>Tgl</th><th>Sub-Bidang</th><th>Aksi</th></tr></thead>
                     <tbody>
-                      {isLoading ? (
-                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px' }}>Memuat data...</td></tr>
-                      ) : formulirList.filter(item => item.bidang === BIDANG_MAP[tab]).length > 0 ? (
-                        formulirList
-                          .filter(item => item.bidang === BIDANG_MAP[tab])
-                          .map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  <button className="btn btn-sm btn-outline" onClick={() => setSelectedForm(item)} title="Lihat Detail">
-                                    <i className="bi bi-eye"></i>
-                                  </button>
-                                  <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusFormulir(item.id)} title="Hapus Data">
-                                    <i className="bi bi-trash"></i>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                      ) : (
-                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir.</td></tr>
-                      )}
+                      {isLoading ? <tr><td colSpan="3" style={{ textAlign: 'center' }}>Memuat...</td></tr> : dataFormulirAktif.length > 0 ? (
+                        dataFormulirAktif.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
+                            <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedForm(item)}><i className="bi bi-eye"></i></button>
+                                <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusFormulir(item.id)}><i className="bi bi-trash"></i></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : <tr><td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>Belum ada formulir.</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -323,76 +320,97 @@ export default function AdminDashboardView() {
 
               {/* --- KANAN: REKAP PENGADUAN --- */}
               <div className="card">
-                <div className="section-head">
-                  <h3 style={{ color: 'var(--magenta-deep)' }}><i className="bi bi-megaphone-fill me-2"></i>Pengaduan Warga</h3>
-                </div>
+                <div className="section-head"><h3 style={{ color: 'var(--magenta-deep)' }}><i className="bi bi-megaphone-fill me-2"></i>Pengaduan Warga</h3></div>
                 <div className="table-responsive">
                   <table className="table">
-                    <thead>
-                      <tr><th>Pelapor / Isi</th><th>Status Tindakan</th><th>Aksi</th></tr>
-                    </thead>
+                    <thead><tr><th>Pelapor / Isi</th><th>Status</th><th>Aksi</th></tr></thead>
                     <tbody>
-                      {isLoading ? (
-                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px' }}>Memuat data...</td></tr>
-                      ) : pengaduanList.filter(item => item.bidang === BIDANG_MAP[tab]).length > 0 ? (
-                        pengaduanList
-                          .filter(item => item.bidang === BIDANG_MAP[tab])
-                          .map((item) => (
-                            <tr key={item.id}>
-                              <td>
-                                <b>{item.nama_pelapor}</b>
-                                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                  {item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}
-                                </div>
-                              </td>
-                              <td>
-                                <select
-                                  value={item.status}
-                                  onChange={(e) => handleUbahStatus(item.id, e.target.value)}
-                                  style={{
-                                    padding: '4px 8px', borderRadius: '12px', border: '1px solid #ddd',
-                                    outline: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
-                                    backgroundColor: item.status === 'menunggu' ? '#ffeaea' : item.status === 'diproses' ? '#fff4e5' : '#e1fce8',
-                                    color: item.status === 'menunggu' ? '#c81e1e' : item.status === 'diproses' ? '#b55a00' : '#036c2a',
-                                  }}
-                                >
-                                  <option value="menunggu">Baru</option>
-                                  <option value="diproses">Diproses</option>
-                                  <option value="selesai">Selesai</option>
-                                </select>
-                              </td>
-                              <td>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  <button className="btn btn-sm btn-outline" onClick={() => setSelectedPengaduan(item)} title="Lihat Detail">
-                                    <i className="bi bi-eye"></i>
-                                  </button>
-
-                                  {/* TOMBOL HAPUS HANYA MUNCUL JIKA STATUS SELESAI */}
-                                  {item.status === 'selesai' && (
-                                    <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusPengaduan(item.id)} title="Hapus Data">
-                                      <i className="bi bi-trash"></i>
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                      ) : (
-                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '30px', color: '#666' }}>Belum ada laporan pengaduan.</td></tr>
-                      )}
+                      {isLoading ? <tr><td colSpan="3" style={{ textAlign: 'center' }}>Memuat...</td></tr> : dataPengaduanAktif.length > 0 ? (
+                        dataPengaduanAktif.map((item) => (
+                          <tr key={item.id}>
+                            <td>
+                              <b>{item.nama_pelapor}</b>
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</div>
+                            </td>
+                            <td>
+                              <select value={item.status} onChange={(e) => handleUbahStatus(item.id, e.target.value)}
+                                style={{ padding: '4px 8px', borderRadius: '12px', border: '1px solid #ddd', outline: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', backgroundColor: item.status === 'menunggu' ? '#ffeaea' : item.status === 'diproses' ? '#fff4e5' : '#e1fce8', color: item.status === 'menunggu' ? '#c81e1e' : item.status === 'diproses' ? '#b55a00' : '#036c2a' }}>
+                                <option value="menunggu">Baru</option><option value="diproses">Diproses</option><option value="selesai">Selesai</option>
+                              </select>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedPengaduan(item)}><i className="bi bi-eye"></i></button>
+                                {item.status === 'selesai' && (
+                                  <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusPengaduan(item.id)}><i className="bi bi-trash"></i></button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : <tr><td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>Belum ada laporan.</td></tr>}
                     </tbody>
                   </table>
                 </div>
               </div>
-
             </div>
+          </div>
+
+          {/* =========================================================================
+              LAPORAN CETAK RAHASIA (HANYA MUNCUL DI PDF, BUKAN DI LAYAR MONITOR)
+              ========================================================================= */}
+          <div id="dokumen-cetak">
+            <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>Laporan Detail Posyandu {selectedPosyandu.nama}</h2>
+            <h4 style={{ textAlign: 'center', color: '#555', marginTop: 0, marginBottom: '24px' }}>Bidang: {BIDANG_NAMA[tab]}</h4>
+            <hr style={{ borderTop: '2px solid #000', marginBottom: '24px' }} />
+
+            {/* BAGIAN A: FORMULIR */}
+            <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>A. Data Pemetaan Identifikasi</h3>
+            {dataFormulirAktif.length > 0 ? (
+              dataFormulirAktif.map((item, idx) => (
+                <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+                  <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{idx + 1}. Sub-Bidang: {item.sub_bidang} <span style={{ fontWeight: 'normal', color: '#555', fontSize: '13px' }}>(Tgl: {new Date(item.created_at).toLocaleDateString('id-ID')})</span></p>
+                  <table className="tabel-cetak">
+                    <tbody>
+                      {Object.entries(item.data_formulir).map(([k, v], i) => (
+                        <tr key={i}>
+                          <th style={{ width: '35%', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</th>
+                          <td style={{ whiteSpace: 'pre-wrap' }}>{v || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))
+            ) : (
+              <p style={{ color: '#666', fontStyle: 'italic', marginBottom: '24px' }}>Tidak ada data identifikasi di bidang ini.</p>
+            )}
+
+            {/* BAGIAN B: PENGADUAN */}
+            <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px', marginTop: '32px' }}>B. Laporan Pengaduan Masyarakat</h3>
+            {dataPengaduanAktif.length > 0 ? (
+              dataPengaduanAktif.map((item, idx) => (
+                <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+                  <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{idx + 1}. Laporan dari: {item.nama_pelapor}</p>
+                  <table className="tabel-cetak">
+                    <tbody>
+                      <tr><th style={{ width: '35%' }}>Tanggal & Status</th><td>{new Date(item.created_at).toLocaleDateString('id-ID')} — <b>{item.status.toUpperCase()}</b></td></tr>
+                      <tr><th>NIK / No. HP</th><td>{item.nik} / {item.no_hp || '-'}</td></tr>
+                      <tr><th>Alamat & Lokasi Masalah</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.alamat || '-'} <br /><b>Lokasi Masalah:</b> {item.lokasi_masalah || '-'}</td></tr>
+                      <tr><th>Isi Keluhan Lengkap</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.isi_keluhan}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              ))
+            ) : (
+              <p style={{ color: '#666', fontStyle: 'italic' }}>Tidak ada data pengaduan di bidang ini.</p>
+            )}
           </div>
         </div>
       )}
 
-
       {/* =========================================
-          MODAL POP-UP DETAIL FORMULIR & PENGADUAN
+          MODAL POP-UP DETAIL (SAMA SEPERTI SEBELUMNYA)
           ========================================= */}
       {selectedForm && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -434,12 +452,15 @@ export default function AdminDashboardView() {
                 <tr><td style={{ color: '#666', fontSize: '13px' }}>Isi Keluhan</td><td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}><b>{selectedPengaduan.isi_keluhan}</b></td></tr>
               </tbody>
             </table>
+
             {selectedPengaduan.lampiran && selectedPengaduan.lampiran.length > 0 && (
               <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
                 <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Lampiran:</b></div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {selectedPengaduan.lampiran.map((file_path, idx) => (
-                    <a key={idx} href={`http://127.0.0.1:8000/storage/${file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}><i className="bi bi-image me-1"></i>Lihat File {idx + 1}</a>
+                    <a key={idx} href={`http://127.0.0.1:8000/storage/${file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                      <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
+                    </a>
                   ))}
                 </div>
               </div>
@@ -448,7 +469,6 @@ export default function AdminDashboardView() {
           </div>
         </div>
       )}
-
     </>
   );
 }
