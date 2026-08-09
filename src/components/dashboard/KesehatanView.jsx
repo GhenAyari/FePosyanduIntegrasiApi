@@ -228,7 +228,9 @@ export default function KesehatanView() {
       resetStateCallback();
       setFotoFiles(null);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Gagal menyimpan data. Pastikan kolom terisi benar.' });
+      // Menangkap pesan asli dari backend Laravel
+      const pesanAsli = err.response?.data?.message || err.message;
+      setMessage({ type: 'error', text: `Error dari Backend: ${pesanAsli}` });
     } finally {
       setIsLoading(false);
     }
@@ -351,7 +353,42 @@ export default function KesehatanView() {
               <div className="form-field"><label>Lingkar Kepala (cm)</label><input type="number" step="0.1" name="lingkar_kepala" value={balitaData.lingkar_kepala} onChange={handleBalitaChange} placeholder="opsional" /></div>
               <div className="form-field"><label>Lingkar Lengan (cm)</label><input type="number" step="0.1" name="lingkar_lengan" value={balitaData.lingkar_lengan} onChange={handleBalitaChange} placeholder="opsional" /></div>
               <div className="form-field full"><label>Catatan Perkembangan Anak</label><textarea rows="2" name="catatan_perkembangan" value={balitaData.catatan_perkembangan} onChange={handleBalitaChange} placeholder="Hasil wawancara perkembangan..."></textarea></div>
-              <div className="form-field full"><label>Status Imunisasi</label><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>{['BCG', 'Polio I', 'Polio II', 'DPT-HB II'].map(v => (<span key={v} onClick={() => toggleImunisasi(v)} className={`badge ${imunisasi.includes(v) ? 'badge-green' : 'badge-outline'}`} style={{ cursor: 'pointer' }}>{imunisasi.includes(v) && <svg className="ic ic-sm"><use href="#i-check" /></svg>} {v}</span>))}</div></div>
+              <div className="form-field full">
+                <label>Status Imunisasi</label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['BCG', 'Polio I', 'Polio II', 'DPT-HB II'].map(v => {
+                    const isSelected = imunisasi.includes(v);
+                    return (
+                      <div
+                        key={v}
+                        onClick={() => toggleImunisasi(v)}
+                        style={{
+                          cursor: 'pointer',
+                          border: isSelected ? '1px solid transparent' : '1px solid #cbd5e1',
+                          // Jika dipilih warnanya hijau muda, jika tidak maka abu-abu terang
+                          backgroundColor: isSelected ? '#16a34a' : '#f8fafc',
+                          color: isSelected ? '#ffffff' : '#475569',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          userSelect: 'none',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                      >
+                        {isSelected && (
+                          <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '6px', fill: 'currentColor' }}>
+                            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+                          </svg>
+                        )}
+                        {v}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="form-field full" style={{ display: 'flex', gap: '10px', marginTop: '18px' }}><button onClick={() => handleSubmit('balita', 'draft')} disabled={isLoading} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Simpan Draf</button><button onClick={() => handleSubmit('balita', 'final')} disabled={isLoading} className="btn btn-violet" style={{ flex: 1, justifyContent: 'center' }}>{isLoading ? 'Menyimpan...' : 'Simpan Data'}</button></div>
             </div>
           )}
