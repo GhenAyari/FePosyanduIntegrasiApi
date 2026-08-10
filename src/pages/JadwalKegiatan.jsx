@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import '../styles/jadwal.css';
-
-import { POSYANDU_LIST } from '../utils/mockData';
 
 const LocationIcon = () => (
   <svg width="24" height="24" viewBox="0 0 16 20" fill="none">
@@ -15,6 +14,21 @@ const LocationIcon = () => (
 );
 
 export default function JadwalKegiatan({ activePage, onNavigate, onDarurat }) {
+  const [posyanduList, setPosyanduList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/api/profil-posyandu')
+      .then(res => {
+        setPosyanduList(res.data.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div className="jadwal-page">
       <Header activePage={activePage} onNavigate={onNavigate} onDarurat={onDarurat} />
@@ -28,29 +42,38 @@ export default function JadwalKegiatan({ activePage, onNavigate, onDarurat }) {
         </div>
 
         <div className="jadwal-cards-grid">
-          {POSYANDU_LIST.map((loc, idx) => (
-            <div className="jadwal-location-card" key={idx}>
-              <div className="jadwal-card-header">
-                <div className="jadwal-icon-box">
-                  <LocationIcon />
-                </div>
-                <div className="jadwal-card-heading">
-                  <h3 className="jadwal-loc-name">Posyandu {loc.nama}</h3>
-                  <span className="jadwal-wilayah-badge">Wilayah Loa Duri Ulu</span>
-                </div>
-              </div>
-
-              <div className="jadwal-card-info-block">
-                <span className="jadwal-info-label">Alamat Lengkap</span>
-                <p className="jadwal-info-value">{loc.alamat}</p>
-              </div>
-
-              <div className="jadwal-card-info-block bordered">
-                <span className="jadwal-info-label">Jadwal Kegiatan Rutin</span>
-                <p className="jadwal-info-value">Setiap tanggal {loc.tanggal} setiap bulan</p>
-              </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', width: '100%', padding: '40px', gridColumn: '1 / -1' }}>
+              <h3>Memuat jadwal dari server...</h3>
             </div>
-          ))}
+          ) : (
+            posyanduList.map((loc) => (
+              <div className="jadwal-location-card" key={loc.id}>
+                <div className="jadwal-card-header">
+                  <div className="jadwal-icon-box">
+                    <LocationIcon />
+                  </div>
+                  <div className="jadwal-card-heading">
+                    <h3 className="jadwal-loc-name">Posyandu {loc.nama}</h3>
+                    <span className="jadwal-wilayah-badge">Wilayah Loa Duri Ulu</span>
+                  </div>
+                </div>
+
+                <div className="jadwal-card-info-block">
+                  <span className="jadwal-info-label">Alamat Lengkap</span>
+                  <p className="jadwal-info-value">{loc.alamat || 'Belum diatur'}</p>
+                </div>
+
+                <div className="jadwal-card-info-block bordered">
+                  <span className="jadwal-info-label">Jadwal Kegiatan Rutin</span>
+                  <p className="jadwal-info-value">
+                    {/* Mengambil langsung dari relasi jadwal */}
+                    {loc.jadwal?.keterangan_waktu ? `${loc.jadwal.keterangan_waktu} setiap bulan` : 'Belum diatur'}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
 
           {/* Persiapan Pemeriksaan Note Card */}
           <div className="jadwal-note-card">
@@ -67,15 +90,6 @@ export default function JadwalKegiatan({ activePage, onNavigate, onDarurat }) {
               Mohon ingat untuk membawa buku kesehatan anak (KMS) atau kartu ibu hamil saat
               mengunjungi lokasi Posyandu sesuai jadwal yang tertera.
             </p>
-            <button type="button" className="jadwal-download-link">
-              DOWNLOAD FORM
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M8 12L3 7 4.4 5.55 7 8.15V0H9V8.15L11.6 5.55 13 7 8 12ZM2 16C1.45 16 0.9792 15.8042 0.5875 15.4125 0.1958 15.0208 0 14.55 0 14V11H2V14H14V11H16V14C16 14.55 15.8042 15.0208 15.4125 15.4125 15.0208 15.8042 14.55 16 14 16H2Z"
-                  fill="#db2777"
-                />
-              </svg>
-            </button>
           </div>
         </div>
       </main>
