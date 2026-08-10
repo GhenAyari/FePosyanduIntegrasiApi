@@ -4,18 +4,17 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import '../styles/detail-artikel.css';
 
-// Gambar statis untuk sidebar (bisa dibuat dinamis nanti jika ada API-nya)
-import relatedImg1 from '../assets/images/detail-artikel/sayuran-organik.jpeg';
-import relatedImg2 from '../assets/images/detail-artikel/edukasi-petugas.jpeg';
-
 export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
   const [artikel, setArtikel] = useState(null);
+
+  // STATE BARU: Untuk menampung daftar artikel lainnya di sidebar
+  const [artikelLainnya, setArtikelLainnya] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDetailArtikel = async () => {
-      // 1. Ambil ID artikel yang dititipkan di brankas browser
+    const fetchArtikelData = async () => {
       const articleId = localStorage.getItem('active_article_id');
 
       if (!articleId) {
@@ -26,19 +25,39 @@ export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
 
       try {
         setIsLoading(true);
-        // 2. Tembak API berdasarkan ID tersebut
-        const response = await axios.get(`http://127.0.0.1:8000/api/artikels/${articleId}`);
-        setArtikel(response.data.data);
+        // 1. Tembak API untuk ambil detail artikel yang sedang dibaca
+        const detailResponse = await axios.get(`http://127.0.0.1:8000/api/artikels/${articleId}`);
+        setArtikel(detailResponse.data.data);
+
+        // 2. Tembak API untuk ambil SEMUA artikel (buat sidebar)
+        const allArticlesResponse = await axios.get('http://127.0.0.1:8000/api/artikels');
+        const semuaArtikel = allArticlesResponse.data.data;
+
+        // 3. Filter: Buang artikel yang sedang dibaca, lalu ambil maksimal 3 buah
+        const filteredLainnya = semuaArtikel
+          .filter(item => item.id !== parseInt(articleId))
+          .slice(0, 3);
+
+        setArtikelLainnya(filteredLainnya);
+
       } catch (err) {
-        console.error('Gagal mengambil detail artikel:', err);
+        console.error('Gagal mengambil data artikel:', err);
         setError('Gagal memuat isi artikel dari server.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDetailArtikel();
+    fetchArtikelData();
   }, []);
+
+  // FUNGSI BARU: Untuk melompat ke artikel lain dari sidebar tanpa reload penuh
+  const handleBacaArtikelLain = (id) => {
+    localStorage.setItem('active_article_id', id);
+    // Refresh window/halaman ke atas agar useEffect narik ulang data baru
+    window.location.reload();
+    window.scrollTo(0, 0);
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -47,11 +66,10 @@ export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
   };
 
   const getImageUrl = (path) => {
-    if (!path) return '';
+    if (!path) return 'https://via.placeholder.com/300x200?text=Artikel+Kesehatan';
     return `http://127.0.0.1:8000/storage/${path}`;
   };
 
-  // Fungsi untuk mendapatkan inisial nama (misal: "Kader Melati" -> "KM")
   const getInitials = (name) => {
     if (!name) return 'A';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -72,12 +90,9 @@ export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
         <div className="detail-artikel-layout">
           {/* Main Column */}
           <article className="detail-artikel-body">
-
-            {/* Status Handling */}
             {isLoading && <div style={{ padding: '40px 0' }}>Memuat isi artikel... ⏳</div>}
             {error && <div style={{ padding: '40px 0', color: 'red' }}>{error}</div>}
 
-            {/* Konten Artikel Dinamis */}
             {!isLoading && !error && artikel && (
               <>
                 <h1 className="detail-artikel-title">{artikel.judul}</h1>
@@ -93,11 +108,10 @@ export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
                   <span className="meta-dot">•</span>
                   <span className="meta-date">{formatDate(artikel.published_at)}</span>
                   <span className="meta-dot">•</span>
-                  <span className="meta-readtime">{artikel.kategori}</span>
+                  <span className="meta-readtime" style={{ textTransform: 'uppercase' }}>{artikel.kategori}</span>
                 </div>
 
-                {/* Karena kita belum menggunakan HTML Editor di backend, kita render teks biasa */}
-                {/* Gunakan pre-wrap agar enter/baris baru dari database tetap terbaca */}
+                {/* Body Text */}
                 <div
                   className="detail-artikel-paragraph"
                   style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8' }}
@@ -115,34 +129,36 @@ export default function DetailArtikel({ activePage, onNavigate, onDarurat }) {
             )}
           </article>
 
-          {/* Sidebar Column (Statik untuk saat ini) */}
+          {/* Sidebar Column */}
           <aside className="detail-artikel-sidebar">
             <div className="related-articles-card">
-              <h3 className="sidebar-title">ARTIKEL TERKAIT</h3>
+              <h3 className="sidebar-title">ARTIKEL LAINNYA</h3>
 
-              <a href="#artikel" className="related-article-item" onClick={(e) => e.preventDefault()}>
-                <div className="related-article-img">
-                  <img src={relatedImg1} alt="Sayuran segar organik" />
-                </div>
-                <div className="related-article-info">
-                  <p className="related-article-title">
-                    Pentingnya Jadwal Imunisasi Anak untuk Pencegahan Penyakit
-                  </p>
-                  <span className="related-article-readtime">5 menit baca</span>
-                </div>
-              </a>
-
-              <a href="#artikel" className="related-article-item" onClick={(e) => e.preventDefault()}>
-                <div className="related-article-img">
-                  <img src={relatedImg2} alt="Petugas kesehatan memberikan edukasi" />
-                </div>
-                <div className="related-article-info">
-                  <p className="related-article-title">
-                    Kebiasaan Tidur yang Aman untuk Bayi Baru Lahir: Panduan Orang Tua
-                  </p>
-                  <span className="related-article-readtime">4 menit baca</span>
-                </div>
-              </a>
+              {artikelLainnya.length > 0 ? (
+                artikelLainnya.map(item => (
+                  <a
+                    key={item.id}
+                    href="#baca"
+                    className="related-article-item"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleBacaArtikelLain(item.id);
+                    }}
+                  >
+                    <div className="related-article-img">
+                      <img src={getImageUrl(item.path_foto)} alt={item.judul} />
+                    </div>
+                    <div className="related-article-info">
+                      <p className="related-article-title" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {item.judul}
+                      </p>
+                      <span className="related-article-readtime">{formatDate(item.published_at)}</span>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <p style={{ color: '#888', fontSize: '13px', fontStyle: 'italic' }}>Tidak ada artikel lain yang diterbitkan saat ini.</p>
+              )}
             </div>
 
             <div className="progress-cta-card">

@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import '../styles/kalkulator.css';
-import { FOOD_DB } from '../utils/mockData';
 import heroImg from '../assets/images/kalkulator/af631a2dbbede787c45511441c34f3d12887b4df.jpeg';
 
-// Activity factors for TDEE calculation
 const ACTIVITY_FACTOR = {
   sangat_ringan: { label: 'Sangat Ringan (jarang olahraga, kerja duduk)', factor: 1.2 },
   ringan: { label: 'Ringan (olahraga 1–3 hari/minggu)', factor: 1.375 },
@@ -28,22 +27,25 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
   const [kalBerat, setKalBerat] = useState('');
   const [kalTinggi, setKalTinggi] = useState('');
   const [kalAktivitas, setKalAktivitas] = useState('sedang');
-  const [foodPick, setFoodPick] = useState(FOOD_DB[0]?.id || 'f01');
-  const [foodQty, setFoodQty] = useState(1);
-  const [foodLog, setFoodLog] = useState([]);
   const [kalResult, setKalResult] = useState(null);
 
-  // Feedback poll
-  const [feedbackChoice, setFeedbackChoice] = useState(null);
-  const [voteCount, setVoteCount] = useState(12);
-  const feedbackOptions = ['Sangat Membantu', 'Cukup Membantu'];
+  // FOOD DB STATE (Ditarik dari API Laravel)
+  const [foodDb, setFoodDb] = useState([]);
+  const [foodPick, setFoodPick] = useState('');
+  const [foodQty, setFoodQty] = useState(1);
+  const [foodLog, setFoodLog] = useState([]);
 
-  const handleFeedbackVote = (idx) => {
-    if (feedbackChoice === null) setVoteCount((v) => v + 1);
-    setFeedbackChoice(idx);
-  };
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/api/makanan')
+      .then(res => {
+        setFoodDb(res.data.data);
+        if (res.data.data.length > 0) {
+          setFoodPick(res.data.data[0].id);
+        }
+      })
+      .catch(err => console.error("Gagal memuat daftar makanan", err));
+  }, []);
 
-  // --- CALC 1: HITUNG IMT & BB IDEAL ---
   const handleCalcIMT = () => {
     const bb = parseFloat(imiBerat);
     const tb = parseFloat(imiTinggi);
@@ -76,7 +78,6 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
       badgeColor = '#b91c1c';
     }
 
-    // Rentang BB Ideal (Broca modification / WHO standard)
     const bbIdealMin = Math.round((tb - 100) * 0.85);
     const bbIdealMax = Math.round((tb - 100) * 0.95);
 
@@ -90,14 +91,12 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
     });
   };
 
-  // --- CALC 2: HITUNG KALORI HARIAN ---
   const handleCalcKalori = () => {
     const bb = parseFloat(kalBerat);
     const tb = parseFloat(kalTinggi);
     const umur = parseFloat(kalUmur);
     if (!bb || !tb || !umur) return;
 
-    // Mifflin-St Jeor Formula
     const bmr = kalGender === 'Perempuan'
       ? (10 * bb) + (6.25 * tb) - (5 * umur) - 161
       : (10 * bb) + (6.25 * tb) - (5 * umur) + 5;
@@ -113,17 +112,17 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
     });
   };
 
-  // Food logger actions
   const handleAddFood = () => {
-    const selectedItem = FOOD_DB.find((f) => f.id === foodPick);
+    // Cari data berdasarkan ID dari tabel referensi_makanan
+    const selectedItem = foodDb.find((f) => f.id === parseInt(foodPick));
     if (!selectedItem || foodQty <= 0) return;
 
-    const totalKcal = selectedItem.kalori * foodQty;
+    const totalKcal = selectedItem.kalori_per_porsi * foodQty;
     const newItem = {
       id: Date.now(),
-      nama: selectedItem.nama,
+      nama: selectedItem.nama_makanan,
       porsi: foodQty,
-      kaloriUnit: selectedItem.kalori,
+      kaloriUnit: selectedItem.kalori_per_porsi,
       totalKalori: totalKcal,
     };
     setFoodLog((prev) => [...prev, newItem]);
@@ -140,9 +139,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
       <Header activePage={activePage} onNavigate={onNavigate} onDarurat={onDarurat} />
 
       <main className="kalkulator-main">
-        {/* Hero Grid */}
         <div className="kalkulator-hero-grid">
-          {/* Welcome Card */}
           <div className="kalkulator-hero-welcome">
             <div className="kalkulator-hero-blur-circle" />
             <div className="kalkulator-hero-text">
@@ -163,18 +160,13 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
           </div>
         </div>
 
-        {/* Section Title */}
         <div className="kalkulator-section-title">Kalkulator Utama</div>
 
-        {/* Calculator Cards Grid (2 Calculators) */}
         <div className="kalkulator-calc-grid">
-          {/* === CALCULATOR 1: IMT & BERAT BADAN IDEAL === */}
+          {/* === CALCULATOR 1: IMT === */}
           <div id="calc-imt-card" className="card">
             <div className="section-head">
-              <h3>
-                <i className="bi bi-activity me-2" style={{ color: 'var(--violet-deep)' }}></i>
-                1. Kalkulator IMT &amp; Berat Badan Ideal
-              </h3>
+              <h3><i className="bi bi-activity me-2" style={{ color: 'var(--violet-deep)' }}></i>1. Kalkulator IMT &amp; Berat Badan Ideal</h3>
             </div>
             <p style={{ fontSize: '12px', color: 'var(--ink-soft)', marginBottom: '16px', fontWeight: 500 }}>
               Hitung Indeks Massa Tubuh (IMT) serta rentang berat badan ideal untuk dewasa berdasarkan kriteria WHO.
@@ -190,30 +182,15 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               </div>
               <div className="form-field">
                 <label>Usia (tahun)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 30"
-                  value={imiUmur}
-                  onChange={(e) => setImiUmur(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 30" value={imiUmur} onChange={(e) => setImiUmur(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Berat Badan (kg)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 55"
-                  value={imiBerat}
-                  onChange={(e) => setImiBerat(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 55" value={imiBerat} onChange={(e) => setImiBerat(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Tinggi Badan (cm)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 160"
-                  value={imiTinggi}
-                  onChange={(e) => setImiTinggi(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 160" value={imiTinggi} onChange={(e) => setImiTinggi(e.target.value)} />
               </div>
             </div>
 
@@ -225,9 +202,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               <div style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', background: 'var(--surface-container-low)', border: '1px solid var(--surface-container-high)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink-soft)' }}>Hasil Indeks Massa Tubuh (IMT):</span>
-                  <span className="badge" style={{ background: imiResult.badgeBg, color: imiResult.badgeColor, fontWeight: 700 }}>
-                    {imiResult.status}
-                  </span>
+                  <span className="badge" style={{ background: imiResult.badgeBg, color: imiResult.badgeColor, fontWeight: 700 }}>{imiResult.status}</span>
                 </div>
                 <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--violet-deep)', marginBottom: '8px' }}>
                   {imiResult.imt} <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink-soft)' }}>kg/m²</span>
@@ -240,13 +215,10 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
             )}
           </div>
 
-          {/* === CALCULATOR 2: KALORI & LOG MAKANAN === */}
+          {/* === CALCULATOR 2: KALORI === */}
           <div id="calc-kalori-card" className="card">
             <div className="section-head">
-              <h3>
-                <i className="bi bi-egg-fried me-2" style={{ color: 'var(--orange-deep)' }}></i>
-                2. Kalkulator Kalori &amp; Log Makanan
-              </h3>
+              <h3><i className="bi bi-egg-fried me-2" style={{ color: 'var(--orange-deep)' }}></i>2. Kalkulator Kalori &amp; Log Makanan</h3>
             </div>
             <p style={{ fontSize: '12px', color: 'var(--ink-soft)', marginBottom: '16px', fontWeight: 500 }}>
               Hitung kebutuhan kalori harian (TDEE) Anda dan catat menu makanan harian untuk menjaga pola makan seimbang.
@@ -262,30 +234,15 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               </div>
               <div className="form-field">
                 <label>Usia (tahun)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 25"
-                  value={kalUmur}
-                  onChange={(e) => setKalUmur(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 25" value={kalUmur} onChange={(e) => setKalUmur(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Berat Badan (kg)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 60"
-                  value={kalBerat}
-                  onChange={(e) => setKalBerat(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 60" value={kalBerat} onChange={(e) => setKalBerat(e.target.value)} />
               </div>
               <div className="form-field">
                 <label>Tinggi Badan (cm)</label>
-                <input
-                  type="number"
-                  placeholder="mis. 165"
-                  value={kalTinggi}
-                  onChange={(e) => setKalTinggi(e.target.value)}
-                />
+                <input type="number" placeholder="mis. 165" value={kalTinggi} onChange={(e) => setKalTinggi(e.target.value)} />
               </div>
               <div className="form-field full">
                 <label>Tingkat Aktivitas Fisik</label>
@@ -321,7 +278,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               </div>
             )}
 
-            {/* Food Logger Section */}
+            {/* Pencatat Log Makanan (Menarik dari state foodDb) */}
             <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
               <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: 'var(--ink)' }}>
                 <i className="bi bi-journal-plus me-1" style={{ color: 'var(--orange-deep)' }}></i>
@@ -329,22 +286,16 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               </div>
 
               <div className="food-log-input-group">
-                <select
-                  className="food-select"
-                  value={foodPick}
-                  onChange={(e) => setFoodPick(e.target.value)}
-                >
-                  {FOOD_DB.map((f) => (
-                    <option key={f.id} value={f.id}>{f.nama} ({f.kalori} kcal)</option>
-                  ))}
+                <select className="food-select" value={foodPick} onChange={(e) => setFoodPick(e.target.value)}>
+                  {foodDb.length > 0 ? (
+                    foodDb.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nama_makanan} ({f.kalori_per_porsi} kcal)</option>
+                    ))
+                  ) : (
+                    <option value="">Memuat data...</option>
+                  )}
                 </select>
-                <input
-                  type="number"
-                  min="1" max="10"
-                  className="food-qty-input"
-                  value={foodQty}
-                  onChange={(e) => setFoodQty(parseInt(e.target.value) || 1)}
-                />
+                <input type="number" min="1" max="10" className="food-qty-input" value={foodQty} onChange={(e) => setFoodQty(parseInt(e.target.value) || 1)} />
                 <button className="btn btn-sm btn-violet food-add-btn" onClick={handleAddFood}>
                   <i className="bi bi-plus-lg me-1"></i>Tambah
                 </button>
@@ -354,12 +305,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
                 <div className="table-responsive">
                   <table className="table" style={{ fontSize: '12px' }}>
                     <thead>
-                      <tr>
-                        <th>Menu Makanan</th>
-                        <th>Porsi</th>
-                        <th>Kalori</th>
-                        <th>Aksi</th>
-                      </tr>
+                      <tr><th>Menu Makanan</th><th>Porsi</th><th>Kalori</th><th>Aksi</th></tr>
                     </thead>
                     <tbody>
                       {foodLog.map((item) => (
@@ -368,10 +314,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
                           <td>{item.porsi}x</td>
                           <td><b>{item.totalKalori} kcal</b></td>
                           <td>
-                            <button
-                              style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', padding: 0 }}
-                              onClick={() => handleRemoveFood(item.id)}
-                            >
+                            <button style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', padding: 0 }} onClick={() => handleRemoveFood(item.id)}>
                               <i className="bi bi-trash-fill"></i>
                             </button>
                           </td>
