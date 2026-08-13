@@ -18,6 +18,9 @@ export default function AdminDashboardView() {
   const [selectedForm, setSelectedForm] = useState(null);
   const [selectedPengaduan, setSelectedPengaduan] = useState(null);
 
+  // === STATE BARU: Target Cetak PDF (Semua vs Individu) ===
+  const [printTarget, setPrintTarget] = useState({ type: 'all', data: null });
+
   const daftarPosyandu = [
     { id: 1, nama: 'Melati', jadwal: 'Tgl. 3' },
     { id: 2, nama: 'Rukun Lestari', jadwal: 'Tgl. 4' },
@@ -131,22 +134,62 @@ export default function AdminDashboardView() {
     }
   };
 
-  // Data terfilter sesuai Tab Aktif (Hanya untuk Detail Mode)
+  // =========================================================================
+  // FUNGSI SAKTI PEMBONGKAR DATA GAMBAR UNTUK CETAK PDF
+  // =========================================================================
+  const getArrayData = (rawData) => {
+    if (!rawData) return [];
+    if (Array.isArray(rawData)) return rawData;
+    try {
+      let parsed = JSON.parse(rawData);
+      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+      if (Array.isArray(parsed)) return parsed;
+      return [parsed];
+    } catch (e) {
+      return [rawData];
+    }
+  };
+
+  const getFileUrl = (path) => {
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `http://127.0.0.1:8000/storage/${cleanPath}`;
+  };
+
+  // --- FUNGSI CETAK INDIVIDU ---
+  const handleCetakIndividu = (tipe, item) => {
+    setPrintTarget({ type: tipe, data: item });
+    // Beri jeda kecil agar React memfilter tabel cetak, lalu buka menu print
+    setTimeout(() => {
+      window.print();
+      // Kembalikan ke mode cetak semua setelah selesai (jeda 1 detik)
+      setTimeout(() => setPrintTarget({ type: 'all', data: null }), 1000);
+    }, 150);
+  };
+  // =========================================================================
+
   const dataFormulirAktif = formulirList.filter(item => item.bidang === BIDANG_MAP[tab]);
   const dataPengaduanAktif = pengaduanList.filter(item => item.bidang === BIDANG_MAP[tab]);
 
+  // Logika Filter untuk Dokumen Cetak (Semua vs 1 Data)
+  let formsToPrint = dataFormulirAktif;
+  let pengaduansToPrint = dataPengaduanAktif;
+
+  if (printTarget.type === 'form' && printTarget.data) {
+    formsToPrint = [printTarget.data];
+    pengaduansToPrint = [];
+  } else if (printTarget.type === 'pengaduan' && printTarget.data) {
+    formsToPrint = [];
+    pengaduansToPrint = [printTarget.data];
+  }
+
   return (
     <>
-      {/* === CSS KHUSUS UNTUK EKSPOR PDF === */}
       <style>{`
-        /* Sembunyikan elemen dokumen cetak di layar monitor normal */
         #dokumen-cetak { display: none; }
 
         @media print {
-          /* Sembunyikan SEMUA elemen web saat di-print */
           body * { visibility: hidden; }
-          
-          /* KECUALI dokumen cetak khusus ini */
           #dokumen-cetak, #dokumen-cetak * { visibility: visible; }
           #dokumen-cetak { 
             display: block !important; 
@@ -157,11 +200,16 @@ export default function AdminDashboardView() {
             padding: 20px;
             font-family: Arial, sans-serif;
           }
-          
-          /* Styling Khusus Tabel Laporan Cetak */
           .tabel-cetak { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
-          .tabel-cetak th, .tabel-cetak td { border: 1px solid #000; padding: 8px; text-align: left; }
-          .tabel-cetak th { background-color: #f2f2f2; }
+          .tabel-cetak th, .tabel-cetak td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
+          .tabel-cetak th { background-color: #f2f2f2; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          
+          #dokumen-cetak img {
+            display: block !important;
+            max-width: 100% !important;
+            page-break-inside: avoid !important;
+          }
+          .no-print { display: none !important; }
         }
       `}</style>
 
@@ -266,13 +314,16 @@ export default function AdminDashboardView() {
           MODE 2: DETAIL PER POSYANDU & EKSPOR
           ========================================= */}
       {viewMode === 'detail' && selectedPosyandu && (
-        <div>
+        <div className="no-print">
           {/* HEADER TOMBOL */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
             <button className="btn btn-outline" onClick={closeDetail}>
               <i className="bi bi-arrow-left me-2"></i>Kembali ke Daftar
             </button>
-            <button className="btn btn-violet" onClick={() => window.print()}>
+            <button className="btn btn-violet" onClick={() => {
+              setPrintTarget({ type: 'all', data: null });
+              setTimeout(() => window.print(), 100);
+            }}>
               <i className="bi bi-file-earmark-pdf-fill me-2"></i>Ekspor PDF Lengkap
             </button>
           </div>
@@ -306,8 +357,10 @@ export default function AdminDashboardView() {
                             <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: '4px' }}>
-                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedForm(item)}><i className="bi bi-eye"></i></button>
-                                <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusFormulir(item.id)}><i className="bi bi-trash"></i></button>
+                                <button className="btn btn-sm btn-outline" title="Lihat Detail" onClick={() => setSelectedForm(item)}><i className="bi bi-eye"></i></button>
+                                {/* TOMBOL CETAK PDF INDIVIDU */}
+                                <button className="btn btn-sm btn-outline" title="Cetak Data Ini" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => handleCetakIndividu('form', item)}><i className="bi bi-printer"></i></button>
+                                <button className="btn btn-sm btn-outline" title="Hapus" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusFormulir(item.id)}><i className="bi bi-trash"></i></button>
                               </div>
                             </td>
                           </tr>
@@ -340,9 +393,11 @@ export default function AdminDashboardView() {
                             </td>
                             <td>
                               <div style={{ display: 'flex', gap: '4px' }}>
-                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedPengaduan(item)}><i className="bi bi-eye"></i></button>
+                                <button className="btn btn-sm btn-outline" title="Lihat Detail" onClick={() => setSelectedPengaduan(item)}><i className="bi bi-eye"></i></button>
+                                {/* TOMBOL CETAK PDF INDIVIDU */}
+                                <button className="btn btn-sm btn-outline" title="Cetak Pengaduan Ini" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => handleCetakIndividu('pengaduan', item)}><i className="bi bi-printer"></i></button>
                                 {item.status === 'selesai' && (
-                                  <button className="btn btn-sm btn-outline" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusPengaduan(item.id)}><i className="bi bi-trash"></i></button>
+                                  <button className="btn btn-sm btn-outline" title="Hapus" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusPengaduan(item.id)}><i className="bi bi-trash"></i></button>
                                 )}
                               </div>
                             </td>
@@ -355,65 +410,109 @@ export default function AdminDashboardView() {
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* =========================================================================
-              LAPORAN CETAK RAHASIA (HANYA MUNCUL DI PDF, BUKAN DI LAYAR MONITOR)
-              ========================================================================= */}
-          <div id="dokumen-cetak">
-            <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>Laporan Detail Posyandu {selectedPosyandu.nama}</h2>
-            <h4 style={{ textAlign: 'center', color: '#555', marginTop: 0, marginBottom: '24px' }}>Bidang: {BIDANG_NAMA[tab]}</h4>
-            <hr style={{ borderTop: '2px solid #000', marginBottom: '24px' }} />
+      {/* =========================================================================
+          LAPORAN CETAK RAHASIA (HANYA MUNCUL DI PDF, BUKAN DI LAYAR MONITOR)
+          ========================================================================= */}
+      {viewMode === 'detail' && selectedPosyandu && (
+        <div id="dokumen-cetak">
+          <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>Laporan Detail Posyandu {selectedPosyandu.nama}</h2>
+          <h4 style={{ textAlign: 'center', color: '#555', marginTop: 0, marginBottom: '24px' }}>Bidang: {BIDANG_NAMA[tab]}</h4>
+          <hr style={{ borderTop: '2px solid #000', marginBottom: '24px' }} />
 
-            {/* BAGIAN A: FORMULIR */}
-            <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>A. Data Pemetaan Identifikasi</h3>
-            {dataFormulirAktif.length > 0 ? (
-              dataFormulirAktif.map((item, idx) => (
-                <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
-                  <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{idx + 1}. Sub-Bidang: {item.sub_bidang} <span style={{ fontWeight: 'normal', color: '#555', fontSize: '13px' }}>(Tgl: {new Date(item.created_at).toLocaleDateString('id-ID')})</span></p>
-                  <table className="tabel-cetak">
-                    <tbody>
-                      {Object.entries(item.data_formulir).map(([k, v], i) => (
-                        <tr key={i}>
-                          <th style={{ width: '35%', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</th>
-                          <td style={{ whiteSpace: 'pre-wrap' }}>{v || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: '#666', fontStyle: 'italic', marginBottom: '24px' }}>Tidak ada data identifikasi di bidang ini.</p>
-            )}
+          {/* BAGIAN A: FORMULIR IDENTIFIKASI */}
+          {formsToPrint.length > 0 && (
+            <>
+              <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>A. Data Pemetaan Identifikasi</h3>
+              {formsToPrint.map((item, idx) => {
+                const fotoArr = getArrayData(item.dokumentasi_foto);
+                return (
+                  <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+                    <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{formsToPrint.length > 1 ? `${idx + 1}. ` : ''}Sub-Bidang: {item.sub_bidang} <span style={{ fontWeight: 'normal', color: '#555', fontSize: '13px' }}>(Tgl: {new Date(item.created_at).toLocaleDateString('id-ID')})</span></p>
+                    <table className="tabel-cetak">
+                      <tbody>
+                        {Object.entries(item.data_formulir).map(([k, v], i) => (
+                          <tr key={i}>
+                            <th style={{ width: '35%', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</th>
+                            <td style={{ whiteSpace: 'pre-wrap' }}>{v || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
 
-            {/* BAGIAN B: PENGADUAN */}
-            <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px', marginTop: '32px' }}>B. Laporan Pengaduan Masyarakat</h3>
-            {dataPengaduanAktif.length > 0 ? (
-              dataPengaduanAktif.map((item, idx) => (
-                <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
-                  <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{idx + 1}. Laporan dari: {item.nama_pelapor}</p>
-                  <table className="tabel-cetak">
-                    <tbody>
-                      <tr><th style={{ width: '35%' }}>Tanggal & Status</th><td>{new Date(item.created_at).toLocaleDateString('id-ID')} — <b>{item.status.toUpperCase()}</b></td></tr>
-                      <tr><th>NIK / No. HP</th><td>{item.nik} / {item.no_hp || '-'}</td></tr>
-                      <tr><th>Alamat & Lokasi Masalah</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.alamat || '-'} <br /><b>Lokasi Masalah:</b> {item.lokasi_masalah || '-'}</td></tr>
-                      <tr><th>Isi Keluhan Lengkap</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.isi_keluhan}</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: '#666', fontStyle: 'italic' }}>Tidak ada data pengaduan di bidang ini.</p>
-            )}
-          </div>
+                    {/* FOTO DI PDF IDENTIFIKASI */}
+                    {fotoArr.length > 0 && (
+                      <div style={{ marginTop: '10px', padding: '10px', border: '1px dashed #999', backgroundColor: '#f9f9f9' }}>
+                        <p style={{ fontWeight: 'bold', fontSize: '13px', margin: '0 0 8px 0' }}>Lampiran Dokumentasi:</p>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                          {fotoArr.map((fPath, fIdx) => {
+                            const isImage = fPath.match(/\.(jpeg|jpg|png|gif)$/i);
+                            const fileUrl = getFileUrl(fPath);
+                            if (isImage) {
+                              return <img key={fIdx} src={fileUrl} alt="Foto Bukti" style={{ display: 'block', maxHeight: '350px', width: 'auto', maxWidth: '100%', objectFit: 'contain', border: '1px solid #ccc', backgroundColor: '#fff', padding: '4px' }} />;
+                            } else {
+                              return <div key={fIdx} style={{ fontSize: '13px', border: '1px solid #ccc', padding: '6px', background: '#fff' }}>📄 Dokumen PDF/Word Terlampir</div>;
+                            }
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* BAGIAN B: PENGADUAN MASYARAKAT */}
+          {pengaduansToPrint.length > 0 && (
+            <>
+              <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px', marginTop: '32px' }}>B. Laporan Pengaduan Masyarakat</h3>
+              {pengaduansToPrint.map((item, idx) => {
+                const lampiranArr = getArrayData(item.lampiran);
+                return (
+                  <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+                    <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{pengaduansToPrint.length > 1 ? `${idx + 1}. ` : ''}Laporan dari: {item.nama_pelapor}</p>
+                    <table className="tabel-cetak">
+                      <tbody>
+                        <tr><th style={{ width: '35%' }}>Tanggal & Status</th><td>{new Date(item.created_at).toLocaleDateString('id-ID')} — <b>{item.status.toUpperCase()}</b></td></tr>
+                        <tr><th>NIK / No. HP</th><td>{item.nik} / {item.no_hp || '-'}</td></tr>
+                        <tr><th>Alamat & Lokasi Masalah</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.alamat || '-'} <br /><b>Lokasi Masalah:</b> {item.lokasi_masalah || '-'}</td></tr>
+                        <tr><th>Isi Keluhan Lengkap</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.isi_keluhan}</td></tr>
+                      </tbody>
+                    </table>
+
+                    {/* FOTO DI PDF PENGADUAN */}
+                    {lampiranArr.length > 0 && (
+                      <div style={{ marginTop: '10px', padding: '10px', border: '1px dashed #999', backgroundColor: '#f9f9f9' }}>
+                        <p style={{ fontWeight: 'bold', fontSize: '13px', margin: '0 0 8px 0' }}>Lampiran Aduan:</p>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                          {lampiranArr.map((lPath, lIdx) => {
+                            const isImage = lPath.match(/\.(jpeg|jpg|png|gif)$/i);
+                            const fileUrl = getFileUrl(lPath);
+                            if (isImage) {
+                              return <img key={lIdx} src={fileUrl} alt="Foto Lampiran" style={{ display: 'block', maxHeight: '350px', width: 'auto', maxWidth: '100%', objectFit: 'contain', border: '1px solid #ccc', backgroundColor: '#fff', padding: '4px' }} />;
+                            } else {
+                              return <div key={lIdx} style={{ fontSize: '13px', border: '1px solid #ccc', padding: '6px', background: '#fff' }}>📄 Dokumen PDF/Word Terlampir</div>;
+                            }
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
       )}
 
       {/* =========================================
-          MODAL POP-UP DETAIL (SAMA SEPERTI SEBELUMNYA)
+          MODAL POP-UP DETAIL
           ========================================= */}
       {selectedForm && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', backgroundColor: '#fff', borderRadius: '12px', padding: '24px' }}>
             <button onClick={() => setSelectedForm(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>&times;</button>
             <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
@@ -428,13 +527,37 @@ export default function AdminDashboardView() {
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: '24px', textAlign: 'right' }}><button className="btn btn-violet" onClick={() => setSelectedForm(null)}>Tutup Rincian</button></div>
+
+            {(() => {
+              const fotoArr = getArrayData(selectedForm.dokumentasi_foto);
+              if (fotoArr.length > 0) {
+                return (
+                  <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Dokumentasi:</b></div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {fotoArr.map((file_path, idx) => (
+                        <a key={idx} href={getFileUrl(file_path)} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                          <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button className="btn btn-outline" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => { setSelectedForm(null); handleCetakIndividu('form', selectedForm); }}>
+                <i className="bi bi-printer me-2"></i>Cetak Ini
+              </button>
+              <button className="btn btn-violet" onClick={() => setSelectedForm(null)}>Tutup Rincian</button>
+            </div>
           </div>
         </div>
       )}
 
       {selectedPengaduan && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', backgroundColor: '#fff', borderRadius: '12px', padding: '24px' }}>
             <button onClick={() => setSelectedPengaduan(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>&times;</button>
             <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
@@ -453,19 +576,30 @@ export default function AdminDashboardView() {
               </tbody>
             </table>
 
-            {selectedPengaduan.lampiran && selectedPengaduan.lampiran.length > 0 && (
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-                <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Lampiran:</b></div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {selectedPengaduan.lampiran.map((file_path, idx) => (
-                    <a key={idx} href={`http://127.0.0.1:8000/storage/${file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                      <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div style={{ marginTop: '24px', textAlign: 'right' }}><button className="btn btn-violet" onClick={() => setSelectedPengaduan(null)}>Tutup Rincian</button></div>
+            {(() => {
+              const lampiranArr = getArrayData(selectedPengaduan.lampiran);
+              if (lampiranArr.length > 0) {
+                return (
+                  <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Lampiran:</b></div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {lampiranArr.map((file_path, idx) => (
+                        <a key={idx} href={getFileUrl(file_path)} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                          <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button className="btn btn-outline" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => { setSelectedPengaduan(null); handleCetakIndividu('pengaduan', selectedPengaduan); }}>
+                <i className="bi bi-printer me-2"></i>Cetak Ini
+              </button>
+              <button className="btn btn-violet" onClick={() => setSelectedPengaduan(null)}>Tutup Rincian</button>
+            </div>
           </div>
         </div>
       )}

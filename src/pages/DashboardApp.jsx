@@ -7,7 +7,6 @@ import userAvatarFallback from '../assets/images/common/kristin-cooper.jpeg';
 import DashboardHome from '../components/dashboard/DashboardHome';
 import KesehatanView from '../components/dashboard/KesehatanView';
 import PengaduanView from '../components/dashboard/PengaduanView';
-import LaporanView from '../components/dashboard/LaporanView';
 import ProfilView from '../components/dashboard/ProfilView';
 import DaftarView from '../components/dashboard/DaftarView';
 import ArtikelView from '../components/dashboard/ArtikelView';
@@ -38,7 +37,6 @@ const NAV = {
         { id: 'kelolawarga', label: 'Kelola Warga', ico: 'bi bi-people-fill' },
         { id: 'kelola-makanan', label: 'Kelola Data Makanan', ico: 'bi bi-egg-fried' },
         { id: 'artikel', label: 'Artikel & Berita', ico: 'bi bi-journal-text' },
-        { id: 'laporan', label: 'Riwayat Laporan', ico: 'bi bi-file-earmark-text-fill' },
       ]
     }
   ],
@@ -48,7 +46,6 @@ const NAV = {
         { id: 'dashboard', label: 'Beranda', ico: 'bi bi-house-door-fill' },
         { id: 'kesehatan', label: 'Pencatatan Kesehatan', ico: 'bi bi-activity' },
         { id: 'pengaduan', label: 'Formulir & Pengaduan', ico: 'bi bi-megaphone-fill' },
-        { id: 'laporan', label: 'Rekap & Laporan', ico: 'bi bi-file-earmark-text-fill' },
       ]
     },
     {
@@ -141,7 +138,6 @@ export default function DashboardApp({ userAuth, onLogout }) {
       case 'dashboard': return <DashboardHome role={role} onViewChange={handleNavClick} />;
       case 'kesehatan': return <KesehatanView />;
       case 'pengaduan': return <PengaduanView />;
-      case 'laporan': return <LaporanView role={role} />;
       case 'profil': return <ProfilView />;
       case 'daftar': return <DaftarView />;
       case 'artikel': return <ArtikelView />;
