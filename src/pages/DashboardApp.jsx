@@ -25,6 +25,7 @@ import WargaPasswordView from '../components/dashboard/WargaPasswordView';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import RekapKegiatanView from '../components/dashboard/RekapKegiatanView';
 import PencatatanKegiatanView from '../components/dashboard/PencatatanKegiatanView';
+import PencatatanDataUmumView from '../components/dashboard/PencatatanDataUmumView';
 
 const NAV = {
   kader: [
@@ -33,7 +34,8 @@ const NAV = {
         { id: 'dashboard', label: 'Beranda', ico: 'bi bi-house-door-fill' },
         { id: 'kesehatan', label: 'Pencatatan Kesehatan', ico: 'bi bi-activity' },
         { id: 'pengaduan', label: 'Formulir & Pengaduan', ico: 'bi bi-megaphone-fill' },
-        { id: 'pencatatan-kegiatan', label: 'Pencatatan Kegiatan (13 Poin)', ico: 'bi bi-card-checklist' },
+        { id: 'rekap-kegiatan', label: 'Rekap Kegiatan Bulanan', ico: 'bi bi-file-earmark-spreadsheet-fill' },
+        { id: 'data-umum', label: 'Data Umum Posyandu', ico: 'bi bi-clipboard-data' },
       ]
     },
     {
@@ -52,6 +54,7 @@ const NAV = {
         { id: 'pengaduan', label: 'Formulir & Pengaduan', ico: 'bi bi-megaphone-fill' },
         { id: 'rekap-kegiatan', label: 'Rekap Kegiatan Bulanan', ico: 'bi bi-file-earmark-spreadsheet-fill' },
         { id: 'pencatatan-kegiatan', label: 'Pencatatan Kegiatan (13 Poin)', ico: 'bi bi-card-checklist' },
+        { id: 'data-umum', label: 'Data Umum Posyandu', ico: 'bi bi-clipboard-data' },
       ]
     },
     {
@@ -117,6 +120,7 @@ const TITLES = {
   'warga-kontak': ['Kontak Posyandu', 'Hubungi Posyandu Anda'],
   'warga-password': ['Ganti Password', 'Perbarui kata sandi akun Anda kapan saja'],
   'pencatatan-kegiatan': ['Pencatatan Kegiatan', 'Formulir 13 Poin & Cetak PDF Vertikal TTD Digital'],
+  'data-umum': ['Data Umum Posyandu', 'Pencatatan demografi sasaran dan pengunjung'],
 };
 
 const ROLE_AVATARS = { kader: 'K', ketua: 'KP', puskesmas: 'PK', superadmin: 'PD', warga: 'W' };
@@ -161,6 +165,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
       case 'warga-password': return <WargaPasswordView />;
       case 'rekap-kegiatan': return <RekapKegiatanView />;
       case 'pencatatan-kegiatan': return <PencatatanKegiatanView />;
+      case 'data-umum': return <PencatatanDataUmumView />;
       default: return <DashboardHome role={role} onViewChange={handleNavClick} />;
 
     }
