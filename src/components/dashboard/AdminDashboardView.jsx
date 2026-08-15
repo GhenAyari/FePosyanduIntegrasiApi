@@ -45,8 +45,8 @@ export default function AdminDashboardView() {
             axios.get('http://127.0.0.1:8000/api/admin/posyandu-updates', { headers: { 'Authorization': `Bearer ${token}` } }),
             axios.get('http://127.0.0.1:8000/api/admin/statistik', { headers: { 'Authorization': `Bearer ${token}` } })
           ]);
-          setWaktuUpdates(resUpdates.data.data);
-          setStats(resStats.data.data);
+          setWaktuUpdates(resUpdates.data?.data || {});
+          setStats(resStats.data?.data || { pengaduan: [], formulir: [] });
         } catch (err) {
           console.error("Gagal mengambil data awal", err);
         }
@@ -61,8 +61,12 @@ export default function AdminDashboardView() {
     return `${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  const maxPengaduan = stats.pengaduan.length > 0 ? Math.max(...stats.pengaduan.map(item => item.total)) : 1;
-  const maxFormulir = stats.formulir.length > 0 ? Math.max(...stats.formulir.map(item => item.total)) : 1;
+  // PELINDUNG ANTI-BUG: Pastikan array selalu ada sebelum di-map
+  const statPengaduan = stats?.pengaduan || [];
+  const statFormulir = stats?.formulir || [];
+  const maxPengaduan = statPengaduan.length > 0 ? Math.max(...statPengaduan.map(item => item.total)) : 1;
+  const maxFormulir = statFormulir.length > 0 ? Math.max(...statFormulir.map(item => item.total)) : 1;
+  
   const formatNama = (text) => text ? text.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '-';
 
   const openDetail = async (posyandu) => {
@@ -77,8 +81,8 @@ export default function AdminDashboardView() {
         axios.get(`http://127.0.0.1:8000/api/admin/pengaduan?posyandu_id=${posyandu.id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
         axios.get(`http://127.0.0.1:8000/api/admin/formulir?posyandu_id=${posyandu.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
-      setPengaduanList(resPengaduan.data.data);
-      setFormulirList(resFormulir.data.data);
+      setPengaduanList(resPengaduan.data?.data || []);
+      setFormulirList(resFormulir.data?.data || []);
     } catch (err) {
       setMessage({ type: 'error', text: 'Gagal memuat data laporan.' });
     } finally {
@@ -139,30 +143,47 @@ export default function AdminDashboardView() {
   // =========================================================================
   const getArrayData = (rawData) => {
     if (!rawData) return [];
-    if (Array.isArray(rawData)) return rawData;
+    let arr = [];
+    if (Array.isArray(rawData)) {
+      arr = rawData;
+    } else {
+      try {
+        let parsed = JSON.parse(rawData);
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+        arr = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (e) {
+        arr = [rawData];
+      }
+    }
+    // Saring hanya string agar match regex tidak error
+    return arr.filter(item => item && typeof item === 'string');
+  };
+
+  // PELINDUNG ANTI-BUG: Fungsi untuk mengekstrak objek JSON dengan aman
+  const getSafeObject = (rawData) => {
+    if (!rawData) return {};
+    if (typeof rawData === 'object') return rawData;
     try {
-      let parsed = JSON.parse(rawData);
-      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-      if (Array.isArray(parsed)) return parsed;
-      return [parsed];
+      return JSON.parse(rawData) || {};
     } catch (e) {
-      return [rawData];
+      return {};
     }
   };
 
   const getFileUrl = (path) => {
-    if (path.startsWith('http')) return path;
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    if (!path) return '';
+    // SAKTI: Paksa ubah backslash Windows ke forward slash
+    let cleanPath = path.replace(/\\/g, '/'); 
+    if (cleanPath.startsWith('http')) return cleanPath;
+    cleanPath = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath;
     return `http://127.0.0.1:8000/storage/${cleanPath}`;
   };
 
   // --- FUNGSI CETAK INDIVIDU ---
   const handleCetakIndividu = (tipe, item) => {
     setPrintTarget({ type: tipe, data: item });
-    // Beri jeda kecil agar React memfilter tabel cetak, lalu buka menu print
     setTimeout(() => {
       window.print();
-      // Kembalikan ke mode cetak semua setelah selesai (jeda 1 detik)
       setTimeout(() => setPrintTarget({ type: 'all', data: null }), 1000);
     }, 150);
   };
@@ -229,14 +250,14 @@ export default function AdminDashboardView() {
               <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
                 <h3 style={{ color: 'var(--magenta-deep)', margin: 0 }}><i className="bi bi-megaphone-fill me-2"></i>Top Laporan Pengaduan</h3>
               </div>
-              {stats.pengaduan.length > 0 ? (
+              {statPengaduan.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {stats.pengaduan.map((item, index) => {
+                  {statPengaduan.map((item, index) => {
                     const percent = (item.total / maxPengaduan) * 100;
                     return (
                       <div key={index}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px', fontWeight: 'bold', color: '#444' }}>
-                          <span>{formatNama(item.bidang)}</span>
+                          <span>{formatNama(item.bidang || '')}</span>
                           <span style={{ color: 'var(--magenta-deep)' }}>{item.total} Laporan</span>
                         </div>
                         <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden' }}>
@@ -255,14 +276,14 @@ export default function AdminDashboardView() {
               <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
                 <h3 style={{ color: 'var(--violet-deep)', margin: 0 }}><i className="bi bi-journal-text me-2"></i>Top Pemetaan Identifikasi</h3>
               </div>
-              {stats.formulir.length > 0 ? (
+              {statFormulir.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {stats.formulir.map((item, index) => {
+                  {statFormulir.map((item, index) => {
                     const percent = (item.total / maxFormulir) * 100;
                     return (
                       <div key={index}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px', fontWeight: 'bold', color: '#444' }}>
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }} title={item.sub_bidang}>{item.sub_bidang}</span>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }} title={item.sub_bidang}>{item.sub_bidang || '-'}</span>
                           <span style={{ color: 'var(--violet-deep)' }}>{item.total} Data</span>
                         </div>
                         <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '10px', overflow: 'hidden' }}>
@@ -295,7 +316,7 @@ export default function AdminDashboardView() {
                     <tr key={posyandu.id}>
                       <td><b>{posyandu.nama}</b></td>
                       <td>{posyandu.jadwal}</td>
-                      <td>{formatWaktu(waktuUpdates[posyandu.id])}</td>
+                      <td>{formatWaktu((waktuUpdates || {})[posyandu.id])}</td>
                       <td>
                         <button className="btn btn-sm btn-outline" onClick={() => openDetail(posyandu)}>
                           <i className="bi bi-search me-1"></i>Detail
@@ -354,11 +375,10 @@ export default function AdminDashboardView() {
                         dataFormulirAktif.map((item, idx) => (
                           <tr key={idx}>
                             <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                            <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
+                            <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang || '-'}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: '4px' }}>
                                 <button className="btn btn-sm btn-outline" title="Lihat Detail" onClick={() => setSelectedForm(item)}><i className="bi bi-eye"></i></button>
-                                {/* TOMBOL CETAK PDF INDIVIDU */}
                                 <button className="btn btn-sm btn-outline" title="Cetak Data Ini" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => handleCetakIndividu('form', item)}><i className="bi bi-printer"></i></button>
                                 <button className="btn btn-sm btn-outline" title="Hapus" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusFormulir(item.id)}><i className="bi bi-trash"></i></button>
                               </div>
@@ -382,11 +402,11 @@ export default function AdminDashboardView() {
                         dataPengaduanAktif.map((item) => (
                           <tr key={item.id}>
                             <td>
-                              <b>{item.nama_pelapor}</b>
-                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</div>
+                              <b>{item.nama_pelapor || 'Warga'}</b>
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{(item.isi_keluhan || '').substring(0, 30)}{(item.isi_keluhan || '').length > 30 ? '...' : ''}</div>
                             </td>
                             <td>
-                              <select value={item.status} onChange={(e) => handleUbahStatus(item.id, e.target.value)}
+                              <select value={item.status || 'menunggu'} onChange={(e) => handleUbahStatus(item.id, e.target.value)}
                                 style={{ padding: '4px 8px', borderRadius: '12px', border: '1px solid #ddd', outline: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', backgroundColor: item.status === 'menunggu' ? '#ffeaea' : item.status === 'diproses' ? '#fff4e5' : '#e1fce8', color: item.status === 'menunggu' ? '#c81e1e' : item.status === 'diproses' ? '#b55a00' : '#036c2a' }}>
                                 <option value="menunggu">Baru</option><option value="diproses">Diproses</option><option value="selesai">Selesai</option>
                               </select>
@@ -394,7 +414,6 @@ export default function AdminDashboardView() {
                             <td>
                               <div style={{ display: 'flex', gap: '4px' }}>
                                 <button className="btn btn-sm btn-outline" title="Lihat Detail" onClick={() => setSelectedPengaduan(item)}><i className="bi bi-eye"></i></button>
-                                {/* TOMBOL CETAK PDF INDIVIDU */}
                                 <button className="btn btn-sm btn-outline" title="Cetak Pengaduan Ini" style={{ color: 'var(--violet-deep)', borderColor: 'var(--violet-deep)' }} onClick={() => handleCetakIndividu('pengaduan', item)}><i className="bi bi-printer"></i></button>
                                 {item.status === 'selesai' && (
                                   <button className="btn btn-sm btn-outline" title="Hapus" style={{ color: '#dc3545', borderColor: '#dc3545' }} onClick={() => handleHapusPengaduan(item.id)}><i className="bi bi-trash"></i></button>
@@ -428,12 +447,14 @@ export default function AdminDashboardView() {
               <h3 style={{ borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>A. Data Pemetaan Identifikasi</h3>
               {formsToPrint.map((item, idx) => {
                 const fotoArr = getArrayData(item.dokumentasi_foto);
+                const amanFormulir = getSafeObject(item.data_formulir);
+
                 return (
                   <div key={idx} style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
-                    <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{formsToPrint.length > 1 ? `${idx + 1}. ` : ''}Sub-Bidang: {item.sub_bidang} <span style={{ fontWeight: 'normal', color: '#555', fontSize: '13px' }}>(Tgl: {new Date(item.created_at).toLocaleDateString('id-ID')})</span></p>
+                    <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{formsToPrint.length > 1 ? `${idx + 1}. ` : ''}Sub-Bidang: {item.sub_bidang || '-'} <span style={{ fontWeight: 'normal', color: '#555', fontSize: '13px' }}>(Tgl: {new Date(item.created_at).toLocaleDateString('id-ID')})</span></p>
                     <table className="tabel-cetak">
                       <tbody>
-                        {Object.entries(item.data_formulir).map(([k, v], i) => (
+                        {Object.entries(amanFormulir).map(([k, v], i) => (
                           <tr key={i}>
                             <th style={{ width: '35%', textTransform: 'capitalize' }}>{k.replace(/_/g, ' ')}</th>
                             <td style={{ whiteSpace: 'pre-wrap' }}>{v || '-'}</td>
@@ -476,7 +497,7 @@ export default function AdminDashboardView() {
                     <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>{pengaduansToPrint.length > 1 ? `${idx + 1}. ` : ''}Laporan dari: {item.nama_pelapor}</p>
                     <table className="tabel-cetak">
                       <tbody>
-                        <tr><th style={{ width: '35%' }}>Tanggal & Status</th><td>{new Date(item.created_at).toLocaleDateString('id-ID')} — <b>{item.status.toUpperCase()}</b></td></tr>
+                        <tr><th style={{ width: '35%' }}>Tanggal & Status</th><td>{new Date(item.created_at).toLocaleDateString('id-ID')} — <b>{(item.status || '').toUpperCase()}</b></td></tr>
                         <tr><th>NIK / No. HP</th><td>{item.nik} / {item.no_hp || '-'}</td></tr>
                         <tr><th>Alamat & Lokasi Masalah</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.alamat || '-'} <br /><b>Lokasi Masalah:</b> {item.lokasi_masalah || '-'}</td></tr>
                         <tr><th>Isi Keluhan Lengkap</th><td style={{ whiteSpace: 'pre-wrap' }}>{item.isi_keluhan}</td></tr>
@@ -522,7 +543,7 @@ export default function AdminDashboardView() {
             <table className="table">
               <tbody>
                 <tr><td style={{ width: '40%', color: '#666', fontSize: '13px' }}>Tanggal Kirim</td><td><b>{new Date(selectedForm.created_at).toLocaleString('id-ID')}</b></td></tr>
-                {Object.entries(selectedForm.data_formulir).map(([key, value], idx) => (
+                {Object.entries(getSafeObject(selectedForm.data_formulir)).map(([key, value], idx) => (
                   <tr key={idx}><td style={{ color: '#666', textTransform: 'capitalize', fontSize: '13px' }}>{key.replace(/_/g, ' ')}</td><td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}><b>{value || '-'}</b></td></tr>
                 ))}
               </tbody>
@@ -562,7 +583,7 @@ export default function AdminDashboardView() {
             <button onClick={() => setSelectedPengaduan(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>&times;</button>
             <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: 'var(--magenta-deep)' }}>Detail Pengaduan Masyarakat</h3>
-              <p style={{ margin: 0, color: '#666', fontSize: '14px', textTransform: 'capitalize' }}>Bidang: {selectedPengaduan.bidang.replace(/_/g, ' ')}</p>
+              <p style={{ margin: 0, color: '#666', fontSize: '14px', textTransform: 'capitalize' }}>Bidang: {(selectedPengaduan.bidang || '').replace(/_/g, ' ')}</p>
             </div>
             <table className="table">
               <tbody>

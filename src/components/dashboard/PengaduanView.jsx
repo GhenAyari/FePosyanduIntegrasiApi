@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function PengaduanView() {
@@ -25,7 +25,7 @@ export default function PengaduanView() {
   });
   const [lampiranPengaduan, setLampiranPengaduan] = useState(null);
 
-  // 🔽🔽🔽 BAGIAN REKAP DIPINDAHKAN KE SINI 🔽🔽🔽
+  // === STATE UNTUK REKAP TABEL & MODAL ===
   const [rekapPengaduan, setRekapPengaduan] = useState([]);
   const [rekapFormulir, setRekapFormulir] = useState([]);
   const [selectedForm, setSelectedForm] = useState(null);
@@ -34,30 +34,75 @@ export default function PengaduanView() {
   const fetchRekap = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      // Panggil pengaduan
-      const resPengaduan = await axios.get('http://127.0.0.1:8000/api/pengaduan-masyarakat', { headers: { 'Authorization': `Bearer ${token}` } });
-      setRekapPengaduan(resPengaduan.data.data);
-
-      // Panggil formulir
-      const resFormulir = await axios.get('http://127.0.0.1:8000/api/formulir-identifikasi', { headers: { 'Authorization': `Bearer ${token}` } });
-      setRekapFormulir(resFormulir.data.data);
+      const [resPengaduan, resFormulir] = await Promise.all([
+        axios.get('http://127.0.0.1:8000/api/pengaduan-masyarakat', { headers: { 'Authorization': `Bearer ${token}` } }),
+        axios.get('http://127.0.0.1:8000/api/formulir-identifikasi', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      setRekapPengaduan(resPengaduan.data?.data || []);
+      setRekapFormulir(resFormulir.data?.data || []);
     } catch (err) {
       console.error('Gagal mengambil data rekap:', err);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchRekap();
   }, []);
-  // 🔼🔼🔼 SAMPAI SINI 🔼🔼🔼
 
-  // === HANDLER INPUT ===
+  // =========================================================================
+  // FUNGSI SAKTI: VALIDASI INPUT & FILE
+  // =========================================================================
   const handleIdenChange = (e) => {
     setFormIden({ ...formIden, [e.target.name]: e.target.value });
   };
 
   const handlePengaduanChange = (e) => {
-    setFormPengaduan({ ...formPengaduan, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    
+    // PERBAIKAN: Paksa NIK hanya menerima Angka & Maksimal 16 Digit
+    if (name === 'nik') {
+      value = value.replace(/\D/g, ''); 
+      if (value.length > 16) value = value.substring(0, 16);
+    }
+    // PERBAIKAN: Paksa No HP hanya menerima Angka & Maksimal 15 Digit
+    if (name === 'no_hp') {
+      value = value.replace(/\D/g, ''); 
+      if (value.length > 15) value = value.substring(0, 15);
+    }
+
+    setFormPengaduan({ ...formPengaduan, [name]: value });
+  };
+
+  // PERBAIKAN: Satpam Pengecek File (Cegah format aneh & ukuran terlalu besar)
+  const handleFileChange = (e, setFileState) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      setFileState(null);
+      return;
+    }
+
+    // Daftar tipe file yang diizinkan
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const maxSize = 2 * 1024 * 1024; // 2MB
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!allowedTypes.includes(file.type)) {
+        setMessage({ type: 'error', text: `Gagal: File "${file.name}" ditolak! Hanya boleh format JPG, PNG, PDF, DOC, atau DOCX.` });
+        e.target.value = ''; // Kosongkan input
+        setFileState(null);
+        return;
+      }
+      if (file.size > maxSize) {
+        setMessage({ type: 'error', text: `Gagal: Ukuran file "${file.name}" terlalu besar! Maksimal 2MB.` });
+        e.target.value = ''; // Kosongkan input
+        setFileState(null);
+        return;
+      }
+    }
+
+    setMessage({ type: '', text: '' }); // Bersihkan error jika lulus sensor
+    setFileState(files);
   };
 
   // Reset form saat ganti sub-tab atau tab
@@ -65,6 +110,42 @@ export default function PengaduanView() {
     setFormIden({});
     setFotoIden(null);
     setMessage({ type: '', text: '' });
+  };
+
+  // =========================================================================
+  // HELPER PENCEGAH LAYAR PUTIH DI MODAL (ANTI-BUG)
+  // =========================================================================
+  const getArrayData = (rawData) => {
+    if (!rawData) return [];
+    let arr = [];
+    if (Array.isArray(rawData)) {
+      arr = rawData;
+    } else {
+      try {
+        let parsed = JSON.parse(rawData);
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+        arr = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (e) {
+        arr = [rawData];
+      }
+    }
+    return arr.filter(item => item && typeof item === 'string');
+  };
+
+  const getSafeObject = (rawData) => {
+    if (!rawData) return {};
+    if (typeof rawData === 'object') return rawData;
+    try {
+      return JSON.parse(rawData) || {};
+    } catch (e) { return {}; }
+  };
+
+  const getFileUrl = (path) => {
+    if (!path) return '';
+    let cleanPath = path.replace(/\\/g, '/'); // Perbaikan Windows Path
+    if (cleanPath.startsWith('http')) return cleanPath;
+    cleanPath = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath;
+    return `http://127.0.0.1:8000/storage/${cleanPath}`;
   };
 
   // === MAP NAMA BIDANG & SUB-BIDANG UNTUK BACKEND ===
@@ -98,13 +179,12 @@ export default function PengaduanView() {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
 
-      // --- PERBAIKANNYA DI SINI ---
-      // 1. Reset/kosongkan isi form dulu
       resetFormIden();
-      // 2. BARU tampilkan pesan suksesnya!
+      // Bersihkan input file secara manual
+      document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+      
       setMessage({ type: 'success', text: response.data.pesan });
       fetchRekap();
-
 
     } catch (err) {
       const pesanAsli = err.response?.data?.pesan || err.response?.data?.message || err.message;
@@ -116,8 +196,10 @@ export default function PengaduanView() {
 
   // === SUBMIT PENGADUAN MASYARAKAT ===
   const submitPengaduan = async () => {
+    // Validasi Akhir sebelum dikirim ke server
     if (formPengaduan.nik.length !== 16) {
-      setMessage({ type: 'error', text: 'Gagal: NIK Pelapor harus 16 digit!' });
+      setMessage({ type: 'error', text: 'Gagal: NIK Pelapor harus tepat 16 digit angka!' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -142,6 +224,9 @@ export default function PengaduanView() {
       setMessage({ type: 'success', text: response.data.pesan });
       setFormPengaduan({ nama_pelapor: '', jenis_kelamin: 'L', nik: '', no_hp: '', alamat: '', isi_keluhan: '', lokasi_masalah: '' });
       setLampiranPengaduan(null);
+      // Bersihkan input file secara manual
+      document.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+      
       fetchRekap();
     } catch (err) {
       const pesanAsli = err.response?.data?.pesan || err.response?.data?.message || err.message;
@@ -150,24 +235,6 @@ export default function PengaduanView() {
       setIsLoading(false);
     }
   };
-  const fetchRekapPengaduan = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await axios.get('http://127.0.0.1:8000/api/pengaduan-masyarakat', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setRekapPengaduan(response.data.data);
-      const resFormulir = await axios.get('http://127.0.0.1:8000/api/formulir-identifikasi', { headers: { 'Authorization': `Bearer ${token}` } });
-      setRekapFormulir(resFormulir.data.data);
-    } catch (err) {
-      console.error('Gagal mengambil data rekap:', err);
-    }
-  };
-
-  // Panggil data rekap saat halaman pertama kali dibuka
-  React.useEffect(() => {
-    fetchRekap();
-  }, []);
 
   return (
     <>
@@ -218,8 +285,6 @@ export default function PengaduanView() {
                     <label>Nama Anak</label>
                     <input name="nama_anak" value={formIden.nama_anak || ''} onChange={handleIdenChange} placeholder="Sesuai KK/Pengakuan" />
                   </div>
-
-                  {/* Dipecah menjadi Tahun dan Bulan untuk akurasi umur */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-field">
                       <label>Umur (Tahun)</label>
@@ -306,6 +371,12 @@ export default function PengaduanView() {
                 </div>
               )}
 
+              {/* TAMBAHAN: Upload File untuk Identifikasi */}
+              <div className="form-field full" style={{ marginTop: '12px' }}>
+                <label>Unggah Dokumentasi Foto / Bukti (Opsional)</label>
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setFotoIden)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+              </div>
+
               <button onClick={submitIdentifikasi} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px' }}>{isLoading ? 'Menyimpan...' : 'Simpan Formulir'}</button>
             </div>
 
@@ -318,12 +389,11 @@ export default function PengaduanView() {
                 Catat aspirasi, usulan, dan kebutuhan warga terkait pendidikan sesuai format standar desa.
               </p>
 
-              <div className="form-grid">
+            <div className="form-grid">
                 <div className="form-field">
                   <label>Tanggal Penyampaian</label>
                   <input type="date" name="tanggal_penyampaian" value={formPengaduan.tanggal_penyampaian || ''} onChange={handlePengaduanChange} />
                 </div>
-
                 <div className="form-field">
                   <label>Penerima Aspirasi</label>
                   <input name="penerima_aspirasi" value={formPengaduan.penerima_aspirasi || ''} onChange={handlePengaduanChange} placeholder="mis. Rina (Kader Pendidikan)" />
@@ -331,11 +401,29 @@ export default function PengaduanView() {
 
                 <div className="form-field">
                   <label>Nama Pengusul</label>
-                  {/* name kita biarkan nama_pelapor agar tetap cocok dengan backend bawaan */}
                   <input name="nama_pelapor" value={formPengaduan.nama_pelapor || ''} onChange={handlePengaduanChange} placeholder="mis. Siti Aminah" />
                 </div>
 
+                {/* --- 3 KOTAK TAMBAHAN YANG SEBELUMNYA HILANG --- */}
                 <div className="form-field">
+                  <label>Jenis Kelamin</label>
+                  <select name="jenis_kelamin" value={formPengaduan.jenis_kelamin || 'P'} onChange={handlePengaduanChange}>
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>No. KTP (NIK)</label>
+                  <input name="nik" value={formPengaduan.nik || ''} onChange={handlePengaduanChange} placeholder="Wajib 16 digit" />
+                  <span className="field-note"><i className="bi bi-lock-fill me-1"></i>Hanya terlihat Kader</span>
+                </div>
+                <div className="form-field">
+                  <label>No. HP (Opsional)</label>
+                  <input name="no_hp" value={formPengaduan.no_hp || ''} onChange={handlePengaduanChange} placeholder="08xx-xxxx-xxxx" />
+                </div>
+                {/* ----------------------------------------------- */}
+
+                <div className="form-field full">
                   <label>Alamat Lengkap</label>
                   <input name="alamat" value={formPengaduan.alamat || ''} onChange={handlePengaduanChange} placeholder="mis. RT 02 / RW 05, Desa Mulawarman" />
                 </div>
@@ -354,7 +442,6 @@ export default function PengaduanView() {
 
                 <div className="form-field full">
                   <label>Uraian Aspirasi / Masukan</label>
-                  {/* name kita biarkan isi_keluhan agar sinkron dengan database */}
                   <textarea name="isi_keluhan" value={formPengaduan.isi_keluhan || ''} onChange={handlePengaduanChange} rows="3" placeholder="mis. Perlu penambahan buku bacaan PAUD karena jumlah buku di perpustakaan desa sangat terbatas..."></textarea>
                 </div>
 
@@ -374,7 +461,7 @@ export default function PengaduanView() {
 
                 <div className="form-field full">
                   <label>Unggah Lampiran (Opsional)</label>
-                  <input type="file" multiple accept=".jpg,.png,.pdf,.doc,.docx" onChange={(e) => setLampiranPengaduan(e.target.files)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+                  <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setLampiranPengaduan)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
                 </div>
               </div>
               <button onClick={submitPengaduan} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>
@@ -382,109 +469,13 @@ export default function PengaduanView() {
               </button>
             </div>
           </div>
-
-          {/* TABEL REKAP DINAMIS */}
-          {/* ================= REKAP TABEL DINAMIS (KIRI: FORMULIR, KANAN: PENGADUAN) ================= */}
-          {(() => {
-            const bidangSaatIni = BIDANG_MAP[tab];
-            const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
-
-            // Filter data
-            const dataPengaduanFilter = rekapPengaduan.filter(item => item.bidang === bidangSaatIni);
-            const dataFormulirFilter = rekapFormulir.filter(item => item.bidang === bidangSaatIni);
-            const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
-
-            return (
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-
-                {/* --- KIRI: REKAP FORMULIR --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Formulir {namaBidang}</h3>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Ringkasan Data</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataFormulirFilter.length > 0 ? (
-                          dataFormulirFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                {/* TOMBOL POP-UP */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedForm(item)}
-                                >
-                                  <i className="bi bi-eye me-1"></i>Lihat Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* --- KANAN: REKAP PENGADUAN --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Pengaduan {namaBidang}</h3>
-                    {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} belum ditindaklanjuti</span>}
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataPengaduanFilter.length > 0 ? (
-                          dataPengaduanFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{item.nama_pelapor}</td>
-                              <td>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</td>
-                              <td>
-                                <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
-                                  {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
-                                </span>
-                              </td>
-                              <td>
-                                {/* TOMBOL POP-UP PENGADUAN */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedPengaduan(item)}
-                                >
-                                  <i className="bi bi-eye"></i> Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan di bidang ini.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })()}
         </div>
       )}
 
       {/* ===== 1. PEKERJAAN UMUM ===== */}
-      {/* ===== 1. PEKERJAAN UMUM ===== */}
       {tab === 1 && (
         <div id="bidang-1">
           <div className="grid grid-2" style={{ marginBottom: '16px' }}>
-            {/* FORM IDENTIFIKASI (KIRI) */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-droplet-fill me-2" style={{ color: 'var(--cyan-deep)' }}></i>Formulir Identifikasi — Pekerjaan Umum</h3>
@@ -497,7 +488,6 @@ export default function PengaduanView() {
                 <div className={`form-chip ${subTab1 === 4 ? 'active' : ''}`} onClick={() => { setSubTab1(4); resetFormIden(); }}>Pembangunan Jalan Desa</div>
               </div>
 
-              {/* LAMPIRAN 1: Edukasi Air Bersih & Limbah Domestik */}
               {subTab1 === 0 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Nama Kader/Petugas</label><input name="nama_petugas" value={formIden.nama_petugas || ''} onChange={handleIdenChange} placeholder="Pengisi form" /></div>
@@ -510,7 +500,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 2: Identifikasi Embung Air Baku */}
               {subTab1 === 1 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Nama Kader/Petugas</label><input name="nama_petugas" value={formIden.nama_petugas || ''} onChange={handleIdenChange} placeholder="Pengisi form" /></div>
@@ -522,7 +511,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 3: Pemeliharaan Jaringan Air Perdesaan */}
               {subTab1 === 2 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Nama Kader/Petugas</label><input name="nama_petugas" value={formIden.nama_petugas || ''} onChange={handleIdenChange} placeholder="Pengisi form" /></div>
@@ -534,7 +522,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 4: Sumur Air Tanah */}
               {subTab1 === 3 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Nama Kader/Petugas</label><input name="nama_petugas" value={formIden.nama_petugas || ''} onChange={handleIdenChange} placeholder="Pengisi form" /></div>
@@ -546,7 +533,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 5: Pembangunan Jalan Desa */}
               {subTab1 === 4 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Nama Kader/Petugas</label><input name="nama_petugas" value={formIden.nama_petugas || ''} onChange={handleIdenChange} placeholder="Pengisi form" /></div>
@@ -558,10 +544,15 @@ export default function PengaduanView() {
                 </div>
               )}
 
+              {/* TAMBAHAN: Upload File untuk Identifikasi */}
+              <div className="form-field full" style={{ marginTop: '12px' }}>
+                <label>Unggah Dokumentasi Foto / Bukti (Opsional)</label>
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setFotoIden)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+              </div>
+
               <button onClick={submitIdentifikasi} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px' }}>{isLoading ? 'Menyimpan...' : 'Simpan Formulir'}</button>
             </div>
 
-            {/* FORM PENGADUAN (KANAN) - LAMPIRAN 6 & 7 */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-megaphone-fill me-2" style={{ color: 'var(--magenta-deep)' }}></i>Pengaduan Masyarakat — Pekerjaan Umum</h3>
@@ -577,7 +568,6 @@ export default function PengaduanView() {
                 <div className="form-field"><label>No. HP (Opsional)</label><input name="no_hp" value={formPengaduan.no_hp} onChange={handlePengaduanChange} placeholder="08xx-xxxx-xxxx" /></div>
                 <div className="form-field full"><label>Alamat Warga</label><input name="alamat" value={formPengaduan.alamat} onChange={handlePengaduanChange} placeholder="Alamat lengkap pelapor" /></div>
 
-                {/* JENIS PENGADUAN KHUSUS PEKERJAAN UMUM */}
                 <div className="form-field full">
                   <label>Jenis Pengaduan (Pekerjaan Umum)</label>
                   <select name="jenis_pengaduan" value={formPengaduan.jenis_pengaduan || 'Pemenuhan Kebutuhan Pokok Air Bersih'} onChange={handlePengaduanChange} style={{ fontWeight: 'bold' }}>
@@ -597,110 +587,16 @@ export default function PengaduanView() {
                 <div className="form-field full"><label>Lokasi Masalah/Usulan (Opsional)</label><input name="lokasi_masalah" value={formPengaduan.lokasi_masalah} onChange={handlePengaduanChange} placeholder="mis. Jalan Utama RT 05" /></div>
 
                 <div className="form-field full"><label>Persyaratan Kelengkapan Aduan</label>
-                  <input type="file" multiple accept=".jpg,.png,.pdf,.doc,.docx" onChange={(e) => setLampiranPengaduan(e.target.files)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+                  <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setLampiranPengaduan)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
                   <span className="field-note">Unggah Surat/Permohonan RT atau Foto lokasi titik pembangunan sarana prasarana.</span>
                 </div>
               </div>
               <button onClick={submitPengaduan} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>{isLoading ? 'Mengirim...' : 'Simpan Pengaduan'}</button>
             </div>
           </div>
-
-          {/* ================= REKAP TABEL DINAMIS (KIRI: FORMULIR, KANAN: PENGADUAN) ================= */}
-          {(() => {
-            const bidangSaatIni = BIDANG_MAP[tab];
-            const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
-
-            // Filter data
-            const dataPengaduanFilter = rekapPengaduan.filter(item => item.bidang === bidangSaatIni);
-            const dataFormulirFilter = rekapFormulir.filter(item => item.bidang === bidangSaatIni);
-            const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
-
-            return (
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-
-                {/* --- KIRI: REKAP FORMULIR --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Formulir {namaBidang}</h3>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Ringkasan Data</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataFormulirFilter.length > 0 ? (
-                          dataFormulirFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                {/* TOMBOL POP-UP */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedForm(item)}
-                                >
-                                  <i className="bi bi-eye me-1"></i>Lihat Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* --- KANAN: REKAP PENGADUAN --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Pengaduan {namaBidang}</h3>
-                    {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} belum ditindaklanjuti</span>}
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataPengaduanFilter.length > 0 ? (
-                          dataPengaduanFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{item.nama_pelapor}</td>
-                              <td>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</td>
-                              <td>
-                                <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
-                                  {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
-                                </span>
-                              </td>
-                              <td>
-                                {/* TOMBOL POP-UP PENGADUAN */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedPengaduan(item)}
-                                >
-                                  <i className="bi bi-eye"></i> Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan di bidang ini.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })()}
         </div>
       )}
 
-      {/* ===== 2. PERUMAHAN RAKYAT ===== */}
       {/* ===== 2. PERUMAHAN RAKYAT ===== */}
       {tab === 2 && (
         <div id="bidang-2">
@@ -716,7 +612,6 @@ export default function PengaduanView() {
                 <div className={`form-chip ${subTab2 === 3 ? 'active' : ''}`} onClick={() => { setSubTab2(3); resetFormIden(); }}>Biopori Rumah Tangga</div>
               </div>
 
-              {/* LAMPIRAN 1: Identifikasi Rumah Layak Huni (RHLH) */}
               {subTab2 === 0 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Kepala Keluarga</label><input name="nama_kk" value={formIden.nama_kk || ''} onChange={handleIdenChange} placeholder="Tulis nama KK sesuai KTP" /></div>
@@ -734,7 +629,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 2: KIE Lingkungan Bersih & Sehat */}
               {subTab2 === 1 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Warga</label><input name="nama_warga" value={formIden.nama_warga || ''} onChange={handleIdenChange} placeholder="Isi sesuai daftar hadir" /></div>
@@ -745,7 +639,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 3: Pemanfaatan Pekarangan untuk Tanaman Pangan Lokal */}
               {subTab2 === 2 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Warga</label><input name="nama_warga" value={formIden.nama_warga || ''} onChange={handleIdenChange} placeholder="Isi nama lengkap" /></div>
@@ -756,7 +649,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 4: Pembuatan Biopori Rumah Tangga */}
               {subTab2 === 3 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Warga</label><input name="nama_warga" value={formIden.nama_warga || ''} onChange={handleIdenChange} placeholder="Nama warga yang membuat biopori" /></div>
@@ -767,10 +659,15 @@ export default function PengaduanView() {
                 </div>
               )}
 
+              {/* TAMBAHAN: Upload File untuk Identifikasi */}
+              <div className="form-field full" style={{ marginTop: '12px' }}>
+                <label>Unggah Dokumentasi Foto / Bukti (Opsional)</label>
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setFotoIden)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+              </div>
+
               <button onClick={submitIdentifikasi} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px' }}>{isLoading ? 'Menyimpan...' : 'Simpan Formulir'}</button>
             </div>
 
-            {/* FORM PENGADUAN (KANAN) - LAMPIRAN 5 & 6 */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-megaphone-fill me-2" style={{ color: 'var(--magenta-deep)' }}></i>Pengaduan Masyarakat — Perumahan Rakyat</h3>
@@ -786,7 +683,6 @@ export default function PengaduanView() {
                 <div className="form-field"><label>No. HP (Opsional)</label><input name="no_hp" value={formPengaduan.no_hp} onChange={handlePengaduanChange} placeholder="08xx-xxxx-xxxx" /></div>
                 <div className="form-field full"><label>Alamat Warga</label><input name="alamat" value={formPengaduan.alamat} onChange={handlePengaduanChange} placeholder="Alamat lengkap pelapor" /></div>
 
-                {/* JENIS PENGADUAN KHUSUS PERUMAHAN RAKYAT */}
                 <div className="form-field full">
                   <label>Jenis Pengaduan (Perumahan Rakyat)</label>
                   <select name="jenis_pengaduan" value={formPengaduan.jenis_pengaduan || 'Penyediaan dan Rehabilitasi Rumah yang Layak Huni'} onChange={handlePengaduanChange} style={{ fontWeight: 'bold' }}>
@@ -804,7 +700,7 @@ export default function PengaduanView() {
 
                 <div className="form-field full">
                   <label>Persyaratan Kelengkapan Aduan</label>
-                  <input type="file" multiple accept=".jpg,.png,.pdf,.doc,.docx" onChange={(e) => setLampiranPengaduan(e.target.files)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+                  <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setLampiranPengaduan)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
                   <div className="field-note" style={{ marginTop: '8px', lineHeight: '1.4' }}>
                     <b>Mohon lampirkan (Bila Ada):</b><br />
                     - Foto copy KTP & KK<br />
@@ -818,108 +714,13 @@ export default function PengaduanView() {
               <button onClick={submitPengaduan} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>{isLoading ? 'Mengirim...' : 'Simpan Pengaduan'}</button>
             </div>
           </div>
-
-          {/* ================= REKAP TABEL DINAMIS (KIRI: FORMULIR, KANAN: PENGADUAN) ================= */}
-          {(() => {
-            const bidangSaatIni = BIDANG_MAP[tab];
-            const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
-
-            // Filter data
-            const dataPengaduanFilter = rekapPengaduan.filter(item => item.bidang === bidangSaatIni);
-            const dataFormulirFilter = rekapFormulir.filter(item => item.bidang === bidangSaatIni);
-            const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
-
-            return (
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-
-                {/* --- KIRI: REKAP FORMULIR --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Formulir {namaBidang}</h3>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Ringkasan Data</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataFormulirFilter.length > 0 ? (
-                          dataFormulirFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                {/* TOMBOL POP-UP */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedForm(item)}
-                                >
-                                  <i className="bi bi-eye me-1"></i>Lihat Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* --- KANAN: REKAP PENGADUAN --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Pengaduan {namaBidang}</h3>
-                    {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} belum ditindaklanjuti</span>}
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataPengaduanFilter.length > 0 ? (
-                          dataPengaduanFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{item.nama_pelapor}</td>
-                              <td>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</td>
-                              <td>
-                                <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
-                                  {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
-                                </span>
-                              </td>
-                              <td>
-                                {/* TOMBOL POP-UP PENGADUAN */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedPengaduan(item)}
-                                >
-                                  <i className="bi bi-eye"></i> Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan di bidang ini.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })()}
         </div>
       )}
 
       {/* ===== 3. TRANTIBUMLINMAS ===== */}
-      {/* ===== 3. TRANTIBUMLINMAS ===== */}
       {tab === 3 && (
         <div id="bidang-3">
           <div className="grid grid-2" style={{ marginBottom: '16px' }}>
-            {/* FORM IDENTIFIKASI / LAPORAN (KIRI) */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-shield-fill-check me-2" style={{ color: 'var(--violet-deep)' }}></i>Form Identifikasi & Laporan — Trantibumlinmas</h3>
@@ -933,7 +734,6 @@ export default function PengaduanView() {
                 <div className={`form-chip ${subTab3 === 5 ? 'active' : ''}`} onClick={() => { setSubTab3(5); resetFormIden(); }}>Patroli Keamanan</div>
               </div>
 
-              {/* LAMPIRAN 1: Identifikasi Korban Trauma & Kebutuhan Psikososial */}
               {subTab3 === 0 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Korban</label><input name="nama_korban" value={formIden.nama_korban || ''} onChange={handleIdenChange} placeholder="Tulis nama lengkap korban" /></div>
@@ -951,7 +751,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 2 & 3: Jadwal & Laporan Penyuluhan Trauma */}
               {subTab3 === 1 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Kegiatan Penyuluhan</label><input name="nama_kegiatan" value={formIden.nama_kegiatan || ''} onChange={handleIdenChange} placeholder="mis. Penyuluhan Pemulihan Trauma Anak" /></div>
@@ -965,7 +764,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 4 & 5: Laporan Kegiatan Kesiapsiagaan Bencana */}
               {subTab3 === 2 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Kegiatan Kesiapsiagaan</label><input name="nama_kegiatan" value={formIden.nama_kegiatan || ''} onChange={handleIdenChange} placeholder="mis. Simulasi Evakuasi Gempa Bumi" /></div>
@@ -979,7 +777,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 6: Pelaporan Insiden & Gangguan Kamtibmas */}
               {subTab3 === 3 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Tanggal Kejadian</label><input type="date" name="tanggal" value={formIden.tanggal || ''} onChange={handleIdenChange} /></div>
@@ -993,7 +790,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 7: Program Sosialisasi Pencegahan Kamtibmas */}
               {subTab3 === 4 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Tema Sosialisasi</label><input name="tema" value={formIden.tema || ''} onChange={handleIdenChange} placeholder="mis. Pencegahan Pencurian Motor & Keamanan Rumah" /></div>
@@ -1007,7 +803,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 8, 9, 10: Jadwal & Laporan Hasil Patroli Keamanan */}
               {subTab3 === 5 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Tanggal Patroli</label><input type="date" name="tanggal" value={formIden.tanggal || ''} onChange={handleIdenChange} /></div>
@@ -1021,10 +816,15 @@ export default function PengaduanView() {
                 </div>
               )}
 
+              {/* TAMBAHAN: Upload File untuk Identifikasi */}
+              <div className="form-field full" style={{ marginTop: '12px' }}>
+                <label>Unggah Dokumentasi Foto / Bukti (Opsional)</label>
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setFotoIden)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+              </div>
+
               <button onClick={submitIdentifikasi} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px' }}>{isLoading ? 'Menyimpan Laporan...' : 'Simpan Laporan'}</button>
             </div>
 
-            {/* FORM PENGADUAN (KANAN) - LAMPIRAN 11 & 12 */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-chat-right-quote-fill me-2" style={{ color: 'var(--magenta-deep)' }}></i>Pengaduan — Trantibumlinmas</h3>
@@ -1040,7 +840,6 @@ export default function PengaduanView() {
                 <div className="form-field"><label>No. HP (Opsional)</label><input name="no_hp" value={formPengaduan.no_hp} onChange={handlePengaduanChange} placeholder="08xx-xxxx-xxxx" /></div>
                 <div className="form-field full"><label>Alamat / RT Warga</label><input name="alamat" value={formPengaduan.alamat} onChange={handlePengaduanChange} placeholder="Alamat pelapor" /></div>
 
-                {/* JENIS PENGADUAN KHUSUS TRANTIBUMLINMAS */}
                 <div className="form-field full">
                   <label>Jenis Pengaduan (Trantibumlinmas)</label>
                   <select name="jenis_pengaduan" value={formPengaduan.jenis_pengaduan || '1) Penyuluhan dan Rehabilitasi Trauma Pasca Bencana'} onChange={handlePengaduanChange} style={{ fontWeight: 'bold' }}>
@@ -1061,7 +860,7 @@ export default function PengaduanView() {
 
                 <div className="form-field full">
                   <label>Persyaratan Kelengkapan Aduan</label>
-                  <input type="file" multiple accept=".jpg,.png,.pdf,.doc,.docx" onChange={(e) => setLampiranPengaduan(e.target.files)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+                  <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setLampiranPengaduan)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
                   <div className="field-note" style={{ marginTop: '8px', lineHeight: '1.4' }}>
                     <b>Mohon lampirkan:</b><br />
                     - Foto copy Kartu Tanda Penduduk (KTP)<br />
@@ -1073,88 +872,6 @@ export default function PengaduanView() {
               <button onClick={submitPengaduan} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>{isLoading ? 'Mengirim...' : 'Simpan Pengaduan'}</button>
             </div>
           </div>
-
-          {/* ================= REKAP TABEL DINAMIS (KIRI: FORMULIR, KANAN: PENGADUAN) ================= */}
-          {(() => {
-            const bidangSaatIni = BIDANG_MAP[tab];
-            const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
-
-            const dataPengaduanFilter = rekapPengaduan.filter(item => item.bidang === bidangSaatIni);
-            const dataFormulirFilter = rekapFormulir.filter(item => item.bidang === bidangSaatIni);
-            const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
-
-            return (
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-                {/* --- KIRI: REKAP FORMULIR --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Laporan {namaBidang}</h3>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataFormulirFilter.length > 0 ? (
-                          dataFormulirFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedForm(item)}>
-                                  <i className="bi bi-eye me-1"></i>Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* --- KANAN: REKAP PENGADUAN --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Pengaduan {namaBidang}</h3>
-                    {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} blm ditindak</span>}
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataPengaduanFilter.length > 0 ? (
-                          dataPengaduanFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{item.nama_pelapor}</td>
-                              <td>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</td>
-                              <td>
-                                <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
-                                  {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
-                                </span>
-                              </td>
-                              <td>
-                                <button className="btn btn-sm btn-outline" onClick={() => setSelectedPengaduan(item)}>
-                                  <i className="bi bi-eye"></i> Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
 
@@ -1162,8 +879,6 @@ export default function PengaduanView() {
       {tab === 4 && (
         <div id="bidang-4">
           <div className="grid grid-2" style={{ marginBottom: '16px' }}>
-
-            {/* FORM IDENTIFIKASI / LAPORAN (KIRI) */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-heart-fill me-2" style={{ color: 'var(--rose-deep)' }}></i>Form Identifikasi — Sosial</h3>
@@ -1175,7 +890,6 @@ export default function PengaduanView() {
                 <div className={`form-chip ${subTab4 === 3 ? 'active' : ''}`} onClick={() => { setSubTab4(3); resetFormIden(); }}>Penyaluran Bantuan Sosial</div>
               </div>
 
-              {/* LAMPIRAN 1: Form Peserta KIE Gender & Inklusi Sosial */}
               {subTab4 === 0 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Peserta</label><input name="nama_peserta" value={formIden.nama_peserta || ''} onChange={handleIdenChange} placeholder="Tulis nama lengkap sesuai identitas" /></div>
@@ -1185,7 +899,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 2: Form Pendataan Fakir Miskin */}
               {subTab4 === 1 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Kepala Keluarga</label><input name="nama_kk" value={formIden.nama_kk || ''} onChange={handleIdenChange} placeholder="Tulis sesuai KTP atau identitas resmi" /></div>
@@ -1198,7 +911,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 3: Form Verifikasi Kondisi Sosial-Ekonomi */}
               {subTab4 === 2 && (
                 <div className="form-grid">
                   <div className="form-field"><label>Kondisi Fisik Rumah</label><select name="kondisi_rumah" value={formIden.kondisi_rumah || 'Tidak Layak'} onChange={handleIdenChange}><option value="Layak">Layak</option><option value="Tidak Layak">Tidak Layak</option></select></div>
@@ -1211,7 +923,6 @@ export default function PengaduanView() {
                 </div>
               )}
 
-              {/* LAMPIRAN 5: Form Serah Terima Bantuan Sosial */}
               {subTab4 === 3 && (
                 <div className="form-grid">
                   <div className="form-field full"><label>Nama Kegiatan & Lokasi</label><input name="nama_kegiatan" value={formIden.nama_kegiatan || ''} onChange={handleIdenChange} placeholder="mis. Penyaluran BLT di Balai Desa" /></div>
@@ -1226,10 +937,15 @@ export default function PengaduanView() {
                 </div>
               )}
 
+              {/* TAMBAHAN: Upload File untuk Identifikasi */}
+              <div className="form-field full" style={{ marginTop: '12px' }}>
+                <label>Unggah Dokumentasi Foto / Bukti (Opsional)</label>
+                <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setFotoIden)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+              </div>
+
               <button onClick={submitIdentifikasi} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px' }}>{isLoading ? 'Menyimpan...' : 'Simpan Formulir'}</button>
             </div>
 
-            {/* FORM PENGADUAN (KANAN) - LAMPIRAN 6 & 7 */}
             <div className="card">
               <div className="section-head">
                 <h3><i className="bi bi-chat-right-quote-fill me-2" style={{ color: 'var(--magenta-deep)' }}></i>Pengaduan Masyarakat — Sosial</h3>
@@ -1245,7 +961,6 @@ export default function PengaduanView() {
                 <div className="form-field"><label>No. HP (Opsional)</label><input name="no_hp" value={formPengaduan.no_hp} onChange={handlePengaduanChange} placeholder="08xx-xxxx-xxxx" /></div>
                 <div className="form-field full"><label>Alamat / RT Warga</label><input name="alamat" value={formPengaduan.alamat} onChange={handlePengaduanChange} placeholder="Alamat pelapor" /></div>
 
-                {/* JENIS PENGADUAN KHUSUS SOSIAL (Sesuai Gambar Lampiran 6) */}
                 <div className="form-field full">
                   <label>Jenis Pengaduan (Sosial)</label>
                   <select name="jenis_pengaduan" value={formPengaduan.jenis_pengaduan || 'KIE: Kesetaraan dan Keadilan Gender'} onChange={handlePengaduanChange} style={{ fontWeight: 'bold' }}>
@@ -1264,7 +979,7 @@ export default function PengaduanView() {
 
                 <div className="form-field full">
                   <label>Persyaratan Kelengkapan Aduan</label>
-                  <input type="file" multiple accept=".jpg,.png,.pdf,.doc,.docx" onChange={(e) => setLampiranPengaduan(e.target.files)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
+                  <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={(e) => handleFileChange(e, setLampiranPengaduan)} style={{ border: '1px solid #ddd', padding: '8px', borderRadius: '6px', width: '100%' }} />
                   <div className="field-note" style={{ marginTop: '8px', lineHeight: '1.4' }}>
                     <b>Mohon lampirkan:</b><br />
                     - Foto copy Kartu Tanda Penduduk (KTP)<br />
@@ -1275,101 +990,93 @@ export default function PengaduanView() {
               <button onClick={submitPengaduan} disabled={isLoading} className="btn btn-violet" style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}>{isLoading ? 'Mengirim...' : 'Simpan Pengaduan'}</button>
             </div>
           </div>
-
-          {/* ================= REKAP TABEL DINAMIS (KIRI: FORMULIR, KANAN: PENGADUAN) ================= */}
-          {(() => {
-            const bidangSaatIni = BIDANG_MAP[tab];
-            const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
-
-            // Filter data
-            const dataPengaduanFilter = rekapPengaduan.filter(item => item.bidang === bidangSaatIni);
-            const dataFormulirFilter = rekapFormulir.filter(item => item.bidang === bidangSaatIni);
-            const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
-
-            return (
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-
-                {/* --- KIRI: REKAP FORMULIR --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Formulir {namaBidang}</h3>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataFormulirFilter.length > 0 ? (
-                          dataFormulirFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
-                              <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang}</span></td>
-                              <td>
-                                {/* TOMBOL POP-UP */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedForm(item)}
-                                >
-                                  <i className="bi bi-eye me-1"></i>Lihat Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* --- KANAN: REKAP PENGADUAN --- */}
-                <div className="card">
-                  <div className="section-head">
-                    <h3>Rekap Pengaduan {namaBidang}</h3>
-                    {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} belum ditindak</span>}
-                  </div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
-                      </thead>
-                      <tbody>
-                        {dataPengaduanFilter.length > 0 ? (
-                          dataPengaduanFilter.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{item.nama_pelapor}</td>
-                              <td>{item.isi_keluhan.substring(0, 30)}{item.isi_keluhan.length > 30 ? '...' : ''}</td>
-                              <td>
-                                <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
-                                  {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
-                                </span>
-                              </td>
-                              <td>
-                                {/* TOMBOL POP-UP PENGADUAN */}
-                                <button
-                                  className="btn btn-sm btn-outline"
-                                  onClick={() => setSelectedPengaduan(item)}
-                                >
-                                  <i className="bi bi-eye"></i> Detail
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan di bidang ini.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })()}
         </div>
       )}
+
+      {/* =========================================================================
+          TABEL REKAP DINAMIS BAWAH (BERLAKU UNTUK SEMUA BIDANG)
+          ========================================================================= */}
+      {(() => {
+        const bidangSaatIni = BIDANG_MAP[tab];
+        const namaBidang = ['Pendidikan', 'Pekerjaan Umum', 'Perumahan Rakyat', 'Trantibumlinmas', 'Sosial'][tab];
+
+        // Filter data dengan aman
+        const dataPengaduanFilter = rekapPengaduan?.filter(item => item.bidang === bidangSaatIni) || [];
+        const dataFormulirFilter = rekapFormulir?.filter(item => item.bidang === bidangSaatIni) || [];
+        const belumSelesai = dataPengaduanFilter.filter(item => item.status !== 'selesai').length;
+
+        return (
+          <div className="grid grid-2" style={{ marginTop: '16px' }}>
+            {/* --- KIRI: REKAP FORMULIR --- */}
+            <div className="card">
+              <div className="section-head">
+                <h3>Rekap Formulir {namaBidang}</h3>
+              </div>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr><th>Tanggal</th><th>Sub-Bidang</th><th>Aksi</th></tr>
+                  </thead>
+                  <tbody>
+                    {dataFormulirFilter.length > 0 ? (
+                      dataFormulirFilter.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
+                          <td><span style={{ fontWeight: '600', color: '#333' }}>{item.sub_bidang || '-'}</span></td>
+                          <td>
+                            <button className="btn btn-sm btn-outline" onClick={() => setSelectedForm(item)}>
+                              <i className="bi bi-eye me-1"></i>Detail
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada formulir tersimpan.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* --- KANAN: REKAP PENGADUAN --- */}
+            <div className="card">
+              <div className="section-head">
+                <h3>Rekap Pengaduan {namaBidang}</h3>
+                {belumSelesai > 0 && <span className="badge badge-orange">{belumSelesai} belum ditindak</span>}
+              </div>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr><th>Pelapor</th><th>Isi Singkat</th><th>Status</th><th>Aksi</th></tr>
+                  </thead>
+                  <tbody>
+                    {dataPengaduanFilter.length > 0 ? (
+                      dataPengaduanFilter.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.nama_pelapor || 'Warga'}</td>
+                          <td>{(item.isi_keluhan || '').substring(0, 30)}{(item.isi_keluhan || '').length > 30 ? '...' : ''}</td>
+                          <td>
+                            <span className={`badge ${item.status === 'menunggu' ? 'badge-rose' : item.status === 'diproses' ? 'badge-orange' : 'badge-green'}`}>
+                              {item.status === 'menunggu' ? 'Baru' : item.status === 'diproses' ? 'Diproses' : 'Selesai'}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="btn btn-sm btn-outline" onClick={() => setSelectedPengaduan(item)}>
+                              <i className="bi bi-eye"></i> Detail
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Belum ada pengaduan di bidang ini.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* =========================================
           MODAL POP-UP DETAIL FORMULIR
@@ -1384,7 +1091,6 @@ export default function PengaduanView() {
             width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
             position: 'relative', backgroundColor: '#fff', borderRadius: '12px', padding: '24px'
           }}>
-            {/* Tombol Close (X) di pojok kanan atas */}
             <button
               onClick={() => setSelectedForm(null)}
               style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}
@@ -1394,17 +1100,16 @@ export default function PengaduanView() {
 
             <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: 'var(--violet-deep)' }}>Detail Formulir</h3>
-              <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>{selectedForm.sub_bidang}</p>
+              <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>{selectedForm.sub_bidang || '-'}</p>
             </div>
 
-            {/* Tabel Rincian Data Dinamis */}
             <table className="table">
               <tbody>
                 <tr>
                   <td style={{ width: '40%', color: '#666', fontSize: '13px' }}>Tanggal Kirim</td>
                   <td><b>{new Date(selectedForm.created_at).toLocaleString('id-ID')}</b></td>
                 </tr>
-                {Object.entries(selectedForm.data_formulir).map(([key, value], idx) => (
+                {Object.entries(getSafeObject(selectedForm.data_formulir)).map(([key, value], idx) => (
                   <tr key={idx}>
                     <td style={{ color: '#666', textTransform: 'capitalize', fontSize: '13px' }}>
                       {key.replace(/_/g, ' ')}
@@ -1415,12 +1120,32 @@ export default function PengaduanView() {
               </tbody>
             </table>
 
+            {/* AREA LAMPIRAN FOTO/DOKUMEN IDENTIFIKASI */}
+            {(() => {
+              const fotoArr = getArrayData(selectedForm.dokumentasi_foto);
+              if (fotoArr.length > 0) {
+                return (
+                  <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Dokumentasi:</b></div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {fotoArr.map((file_path, idx) => (
+                        <a key={idx} href={getFileUrl(file_path)} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                          <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
+
             <div style={{ marginTop: '24px', textAlign: 'right' }}>
               <button className="btn btn-violet" onClick={() => setSelectedForm(null)}>Tutup Rincian</button>
             </div>
           </div>
         </div>
       )}
+
       {/* =========================================
           MODAL POP-UP DETAIL PENGADUAN
           ========================================= */}
@@ -1443,7 +1168,7 @@ export default function PengaduanView() {
 
             <div className="section-head" style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '16px' }}>
               <h3 style={{ color: 'var(--magenta-deep)' }}>Detail Pengaduan</h3>
-              <p style={{ margin: 0, color: '#666', fontSize: '14px', textTransform: 'capitalize' }}>Bidang: {selectedPengaduan.bidang.replace(/_/g, ' ')}</p>
+              <p style={{ margin: 0, color: '#666', fontSize: '14px', textTransform: 'capitalize' }}>Bidang: {(selectedPengaduan.bidang || '').replace(/_/g, ' ')}</p>
             </div>
 
             <table className="table">
@@ -1469,26 +1194,24 @@ export default function PengaduanView() {
               </tbody>
             </table>
 
-            {/* AREA LAMPIRAN FOTO/DOKUMEN */}
-            {selectedPengaduan.lampiran && selectedPengaduan.lampiran.length > 0 && (
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-                <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Lampiran:</b></div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {selectedPengaduan.lampiran.map((file_path, idx) => (
-                    <a
-                      key={idx}
-                      href={`http://127.0.0.1:8000/storage/${file_path}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-sm btn-outline"
-                      style={{ textDecoration: 'none', cursor: 'pointer' }}
-                    >
-                      <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* AREA LAMPIRAN FOTO/DOKUMEN PENGADUAN */}
+            {(() => {
+              const lampiranArr = getArrayData(selectedPengaduan.lampiran);
+              if (lampiranArr.length > 0) {
+                return (
+                  <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '13px', marginBottom: '8px' }}><b>Bukti Lampiran:</b></div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {lampiranArr.map((file_path, idx) => (
+                        <a key={idx} href={getFileUrl(file_path)} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                          <i className="bi bi-image me-1"></i>Lihat File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            })()}
 
             <div style={{ marginTop: '24px', textAlign: 'right' }}>
               <button className="btn btn-violet" onClick={() => setSelectedPengaduan(null)}>Tutup Rincian</button>

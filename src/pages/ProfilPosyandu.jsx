@@ -9,7 +9,7 @@ import CoreTasksCard from '../components/profil/CoreTasksCard';
 import StrategicFunctionsCard from '../components/profil/StrategicFunctionsCard';
 import StrukturKepengurusanSection from '../components/profil/StrukturKepengurusanSection';
 
-export default function ProfilPosyandu() {
+export default function ProfilPosyandu({ onNavigate }) {
   const [profilList, setProfilList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ export default function ProfilPosyandu() {
 
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <div className="card" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', backgroundColor: '#fff', borderRadius: '12px', padding: '32px' }}>
+        <div className="card" style={{ width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', backgroundColor: '#fff', borderRadius: '12px', padding: '32px' }}>
           <button onClick={() => setSelectedDetailPosyandu(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', fontSize: '28px', cursor: 'pointer', color: '#666' }}>&times;</button>
 
           <div style={{ borderBottom: '2px solid #eee', paddingBottom: '16px', marginBottom: '24px' }}>
@@ -67,9 +67,19 @@ export default function ProfilPosyandu() {
               <h4 style={{ color: '#444', borderBottom: '1px solid #ddd', paddingBottom: '8px', marginBottom: '12px' }}><i className="bi bi-info-circle-fill me-2"></i>Informasi Umum</h4>
               <table className="table" style={{ fontSize: '13px', marginBottom: '24px' }}>
                 <tbody>
-                  <tr><td style={{ width: '40%' }}>Alamat</td><td><b>{p.alamat || '-'}</b></td></tr>
-                  <tr><td>Program Terintegrasi</td><td><b>{p.program_terintegrasi || '-'}</b></td></tr>
+                  <tr><td style={{ width: '40%' }}>Kode Kec / Desa</td><td><b>{p.kd_kecamatan || '-'} / {p.kd_desa || '-'}</b></td></tr>
+                  <tr><td>RT / No. Posyandu</td><td><b>{p.rukun_tetangga || '-'} / {p.nomor_posyandu || '-'}</b></td></tr>
+                  <tr><td>Alamat</td><td><b>{p.alamat || '-'}</b></td></tr>
                   <tr><td>Kontak Darurat</td><td><b>{p.kontak_darurat || '-'}</b></td></tr>
+                  <tr>
+                    <td>Program Integrasi</td>
+                    <td>
+                      <b>PAUD:</b> {p.program_paud || 'Tidak'}<br/>
+                      <b>BKB:</b> {p.program_bkb || 'Tidak'}<br/>
+                      <b>Lainnya:</b> {p.program_terintegrasi || '-'}
+                    </td>
+                  </tr>
+                  <tr><td>Keterangan Profil</td><td><b>{p.keterangan_profil || '-'}</b></td></tr>
                 </tbody>
               </table>
 
@@ -92,6 +102,7 @@ export default function ProfilPosyandu() {
                 <tbody>
                   <tr><td style={{ width: '40%' }}>Bidan Desa</td><td><b>{p.bidan_desa || '-'}</b></td></tr>
                   <tr><td>Petugas KB</td><td><b>{p.petugas_kb || '-'}</b></td></tr>
+                  <tr><td>Medis/Paramedis</td><td><b>{p.medis_paramedis || '-'}</b></td></tr>
                   <tr><td>Kader Aktif</td><td><b>{p.jml_kader_aktif || 0} Orang</b></td></tr>
                   <tr><td>Kader Tdk Aktif</td><td><b>{p.jml_kader_tidak_aktif || 0} Orang</b></td></tr>
                 </tbody>
@@ -101,12 +112,21 @@ export default function ProfilPosyandu() {
               <table className="table" style={{ fontSize: '13px' }}>
                 <tbody>
                   <tr><td style={{ width: '40%' }}>Tempat Pelayanan</td><td><b>{p.tempat_pelayanan || '-'}</b></td></tr>
-                  <tr><td>Timbangan Balita</td><td><b>{p.timbangan || '-'}</b></td></tr>
+                  <tr>
+                    <td>Total Timbangan</td>
+                    <td>
+                      <b>Dacin:</b> {p.jml_dacin || 0} | <b>Bayi:</b> {p.timbangan_bayi || 0}<br/>
+                      <b>Balita:</b> {p.timbangan_balita || 0} | <b>Ibu:</b> {p.timbangan_ibu || 0}
+                    </td>
+                  </tr>
                   <tr><td>Buku KIA</td><td><b>{p.buku_kia || '-'}</b></td></tr>
                   <tr><td>Formulir SIP</td><td><b>{p.formulir_sip || '-'}</b></td></tr>
                   <tr><td>Blanko SKDN</td><td><b>{p.blanko_skdn || '-'}</b></td></tr>
+                  <tr><td>Buku Keuangan</td><td><b>{p.buku_catatan_keuangan || '-'}</b></td></tr>
                   <tr><td>Alat Peraga (APE)</td><td><b>{p.ape || '-'}</b></td></tr>
+                  <tr><td>Alat Penyuluhan</td><td><b>{p.alat_peraga_penyuluhan || '-'}</b></td></tr>
                   <tr><td>Sarana Lainnya</td><td><b>{p.sarana_lain || '-'}</b></td></tr>
+                  <tr><td>Ket. Sarana</td><td><b>{p.keterangan_sarana || '-'}</b></td></tr>
                 </tbody>
               </table>
             </div>
@@ -122,7 +142,7 @@ export default function ProfilPosyandu() {
 
   return (
     <div className="profil-wrapper">
-      <Header activePage="profil" />
+      <Header activePage="profil" onNavigate={onNavigate} />
 
       <main className="profil-container">
         <section className="profil-section">

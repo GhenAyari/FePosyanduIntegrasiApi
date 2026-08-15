@@ -3,6 +3,7 @@ import IconSprite from '../components/common/IconSprite';
 import logo from '../assets/images/common/logo-header.jpeg';
 import userAvatarFallback from '../assets/images/common/kristin-cooper.jpeg';
 
+
 // Import views (we will create these)
 import DashboardHome from '../components/dashboard/DashboardHome';
 import KesehatanView from '../components/dashboard/KesehatanView';
@@ -22,6 +23,8 @@ import WargaKieView from '../components/dashboard/WargaKieView';
 import WargaKontakView from '../components/dashboard/WargaKontakView';
 import WargaPasswordView from '../components/dashboard/WargaPasswordView';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
+import RekapKegiatanView from '../components/dashboard/RekapKegiatanView';
+import PencatatanKegiatanView from '../components/dashboard/PencatatanKegiatanView';
 
 const NAV = {
   kader: [
@@ -30,6 +33,7 @@ const NAV = {
         { id: 'dashboard', label: 'Beranda', ico: 'bi bi-house-door-fill' },
         { id: 'kesehatan', label: 'Pencatatan Kesehatan', ico: 'bi bi-activity' },
         { id: 'pengaduan', label: 'Formulir & Pengaduan', ico: 'bi bi-megaphone-fill' },
+        { id: 'pencatatan-kegiatan', label: 'Pencatatan Kegiatan (13 Poin)', ico: 'bi bi-card-checklist' },
       ]
     },
     {
@@ -46,6 +50,8 @@ const NAV = {
         { id: 'dashboard', label: 'Beranda', ico: 'bi bi-house-door-fill' },
         { id: 'kesehatan', label: 'Pencatatan Kesehatan', ico: 'bi bi-activity' },
         { id: 'pengaduan', label: 'Formulir & Pengaduan', ico: 'bi bi-megaphone-fill' },
+        { id: 'rekap-kegiatan', label: 'Rekap Kegiatan Bulanan', ico: 'bi bi-file-earmark-spreadsheet-fill' },
+        { id: 'pencatatan-kegiatan', label: 'Pencatatan Kegiatan (13 Poin)', ico: 'bi bi-card-checklist' },
       ]
     },
     {
@@ -110,6 +116,7 @@ const TITLES = {
   'warga-kie': ['Portal KIE Khusus', 'Materi edukasi literasi digital & kesiapsiagaan bencana'],
   'warga-kontak': ['Kontak Posyandu', 'Hubungi Posyandu Anda'],
   'warga-password': ['Ganti Password', 'Perbarui kata sandi akun Anda kapan saja'],
+  'pencatatan-kegiatan': ['Pencatatan Kegiatan', 'Formulir 13 Poin & Cetak PDF Vertikal TTD Digital'],
 };
 
 const ROLE_AVATARS = { kader: 'K', ketua: 'KP', puskesmas: 'PK', superadmin: 'PD', warga: 'W' };
@@ -152,7 +159,10 @@ export default function DashboardApp({ userAuth, onLogout }) {
       case 'warga-kie': return <WargaKieView />;
       case 'warga-kontak': return <WargaKontakView posyandu={namaPosyandu} />;
       case 'warga-password': return <WargaPasswordView />;
+      case 'rekap-kegiatan': return <RekapKegiatanView />;
+      case 'pencatatan-kegiatan': return <PencatatanKegiatanView />;
       default: return <DashboardHome role={role} onViewChange={handleNavClick} />;
+
     }
   };
 
