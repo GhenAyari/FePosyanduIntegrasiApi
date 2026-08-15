@@ -26,6 +26,7 @@ import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import RekapKegiatanView from '../components/dashboard/RekapKegiatanView';
 import PencatatanKegiatanView from '../components/dashboard/PencatatanKegiatanView';
 import PencatatanDataUmumView from '../components/dashboard/PencatatanDataUmumView';
+import AdminArsipLaporanView from '../components/dashboard/AdminArsipLaporanView';
 
 const NAV = {
   kader: [
@@ -80,6 +81,7 @@ const NAV = {
         { id: 'superadmin-dashboard', label: 'Transparansi Pelaporan', ico: 'bi bi-house-door-fill' },
         { id: 'superadmin-analitik', label: 'Dashboard Analitik 6 Bidang', ico: 'bi bi-bar-chart-line-fill' },
         { id: 'superadmin-ekspor', label: 'Ekspor Gabungan 9 Posyandu', ico: 'bi bi-file-earmark-excel-fill' },
+        { id: 'admin-arsip', label: 'Arsip Laporan Posyandu', ico: 'bi bi-folder-check' }
       ]
     }
   ],
@@ -121,6 +123,7 @@ const TITLES = {
   'warga-password': ['Ganti Password', 'Perbarui kata sandi akun Anda kapan saja'],
   'pencatatan-kegiatan': ['Pencatatan Kegiatan', 'Formulir 13 Poin & Cetak PDF Vertikal TTD Digital'],
   'data-umum': ['Data Umum Posyandu', 'Pencatatan demografi sasaran dan pengunjung'],
+  'admin-arsip': ['Arsip Laporan Posyandu', 'Pantau dan Ekspor Laporan Bulanan (F1/F2, 13 Poin, Data Umum)'],
 };
 
 const ROLE_AVATARS = { kader: 'K', ketua: 'KP', puskesmas: 'PK', superadmin: 'PD', warga: 'W' };
@@ -166,6 +169,7 @@ export default function DashboardApp({ userAuth, onLogout }) {
       case 'rekap-kegiatan': return <RekapKegiatanView />;
       case 'pencatatan-kegiatan': return <PencatatanKegiatanView />;
       case 'data-umum': return <PencatatanDataUmumView />;
+      case 'admin-arsip': return <AdminArsipLaporanView />;
       default: return <DashboardHome role={role} onViewChange={handleNavClick} />;
 
     }

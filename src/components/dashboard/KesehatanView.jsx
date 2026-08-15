@@ -25,7 +25,7 @@ export default function KesehatanView() {
   const [daftarIbu, setDaftarIbu] = useState([]);
   const [daftarLansia, setDaftarLansia] = useState([]);
 
-  // === STATE FORM (Tambahan pemeriksaan_id untuk fitur Draf) ===
+  // === STATE FORM ===
   const [balitaData, setBalitaData] = useState({
     pemeriksaan_id: '', anak_id: '', tanggal_periksa: new Date().toISOString().split('T')[0],
     umur_bulan: '', berat_badan: '', tinggi_badan: '', lingkar_kepala: '', lingkar_lengan: '', catatan_perkembangan: '', status_gizi: 'Normal'
@@ -218,7 +218,7 @@ export default function KesehatanView() {
     setLansiaData(updated);
   };
 
-  // === SUBMIT DATA ===
+  // === SUBMIT DATA (FUNGSI UTAMA) ===
   const submitData = async (url, formData, resetStateCallback) => {
     setIsLoading(true); setMessage({ type: '', text: '' });
     try {
@@ -228,9 +228,13 @@ export default function KesehatanView() {
       resetStateCallback();
       setFotoFiles(null);
     } catch (err) {
-      // Menangkap pesan asli dari backend Laravel
-      const pesanAsli = err.response?.data?.message || err.message;
-      setMessage({ type: 'error', text: `Error dari Backend: ${pesanAsli}` });
+      // PERBAIKAN: Menangkap detail error validasi dari Laravel agar user tahu persis apa yang salah
+      let pesanError = err.response?.data?.message || err.message;
+      if (err.response?.data?.errors) {
+        const firstErrorKey = Object.keys(err.response.data.errors)[0];
+        pesanError = err.response.data.errors[firstErrorKey][0];
+      }
+      setMessage({ type: 'error', text: `Gagal Menyimpan: ${pesanError}` });
     } finally {
       setIsLoading(false);
     }
@@ -241,37 +245,57 @@ export default function KesehatanView() {
     formData.append('status_form', statusForm);
     if (fotoFiles) { for (let i = 0; i < fotoFiles.length; i++) formData.append('dokumentasi_foto[]', fotoFiles[i]); }
 
-    if (kelompok === 'balita') {
-      if (balitaData.pemeriksaan_id) formData.append('pemeriksaan_id', balitaData.pemeriksaan_id);
-      Object.keys(balitaData).forEach(k => { if (k !== 'pemeriksaan_id') formData.append(k, balitaData[k]) });
-      imunisasi.forEach((item, index) => formData.append(`imunisasi[${index}]`, item));
+    // PERBAIKAN: Fungsi pembersih cerdas untuk membuang field kosong yang bikin error
+    const appendSafeData = (dataObj, targetIdField) => {
+      if (dataObj.pemeriksaan_id) formData.append('pemeriksaan_id', dataObj.pemeriksaan_id);
+      
+      Object.keys(dataObj).forEach(k => {
+        if (k === 'pemeriksaan_id') return;
+        let val = dataObj[k];
 
+        // Jika user MEMILIH nama dari dropdown, jangan pernah kirim data "_baru" 
+        // (ini mencegah error validasi string di laravel)
+        if (dataObj[targetIdField] !== 'baru' && k.includes('_baru')) return;
+
+        // Cegah pengiriman field yang murni kosong ("") untuk menghindari konflik string vs int di backend
+        if (val !== '' && val !== null && val !== undefined) {
+          formData.append(k, val);
+        }
+      });
+    };
+
+    if (kelompok === 'balita') {
+      appendSafeData(balitaData, 'anak_id');
+      imunisasi.forEach((item, index) => formData.append(`imunisasi[${index}]`, item));
       submitData('http://127.0.0.1:8000/api/pemeriksaan-balita', formData, () => {
-        if (statusForm === 'final') { setBalitaData({ pemeriksaan_id: '', anak_id: '', umur_bulan: '', berat_badan: '', tinggi_badan: '', lingkar_kepala: '', lingkar_lengan: '', catatan_perkembangan: '' }); setImunisasi([]); }
+        if (statusForm === 'final') { 
+          setBalitaData({ pemeriksaan_id: '', anak_id: '', umur_bulan: '', berat_badan: '', tinggi_badan: '', lingkar_kepala: '', lingkar_lengan: '', catatan_perkembangan: '', status_gizi: 'Normal' }); 
+          setImunisasi([]); 
+        }
       });
     }
     else if (kelompok === 'remaja') {
-      if (remajaData.pemeriksaan_id) formData.append('pemeriksaan_id', remajaData.pemeriksaan_id);
-      Object.keys(remajaData).forEach(k => { if (k !== 'pemeriksaan_id') formData.append(k, remajaData[k]) });
-
+      appendSafeData(remajaData, 'remaja_id');
       submitData('http://127.0.0.1:8000/api/pemeriksaan-remaja', formData, () => {
-        if (statusForm === 'final') setRemajaData({ pemeriksaan_id: '', remaja_id: '', umur_tahun: '', berat_badan: '', tinggi_badan: '', tekanan_darah: '' });
+        if (statusForm === 'final') {
+          setRemajaData({ pemeriksaan_id: '', remaja_id: '', nama_remaja_baru: '', jenis_kelamin_baru: 'L', umur_tahun: '', berat_badan: '', tinggi_badan: '', tekanan_darah: '', status_imt: 'Normal' });
+        }
       });
     }
     else if (kelompok === 'hamil') {
-      if (hamilData.pemeriksaan_id) formData.append('pemeriksaan_id', hamilData.pemeriksaan_id);
-      Object.keys(hamilData).forEach(k => { if (k !== 'pemeriksaan_id') formData.append(k, hamilData[k]) });
-
+      appendSafeData(hamilData, 'ibu_id');
       submitData('http://127.0.0.1:8000/api/pemeriksaan-hamil', formData, () => {
-        if (statusForm === 'final') setHamilData({ pemeriksaan_id: '', ibu_id: '', usia_kehamilan_minggu: '', berat_badan: '', tinggi_badan: '', tekanan_darah: '', lingkar_perut: '', lingkar_lengan: '', status_kek: 'Tidak', anemia: 'Tidak' });
+        if (statusForm === 'final') {
+          setHamilData({ pemeriksaan_id: '', ibu_id: '', nama_ibu_baru: '', usia_kehamilan_minggu: '', berat_badan: '', tinggi_badan: '', tekanan_darah: '', lingkar_perut: '', lingkar_lengan: '', status_kek: 'Tidak', anemia: 'Tidak', status_imt: 'Normal' });
+        }
       });
     }
     else if (kelompok === 'lansia') {
-      if (lansiaData.pemeriksaan_id) formData.append('pemeriksaan_id', lansiaData.pemeriksaan_id);
-      Object.keys(lansiaData).forEach(k => { if (k !== 'pemeriksaan_id') formData.append(k, lansiaData[k]) });
-
+      appendSafeData(lansiaData, 'lansia_id');
       submitData('http://127.0.0.1:8000/api/pemeriksaan-lansia', formData, () => {
-        if (statusForm === 'final') setLansiaData({ pemeriksaan_id: '', lansia_id: '', berat_badan: '', tinggi_badan: '', lingkar_pinggang: '', tekanan_darah: '', tensi: 'Normal', gula_darah: '', nadi: '' });
+        if (statusForm === 'final') {
+          setLansiaData({ pemeriksaan_id: '', lansia_id: '', nama_lansia_baru: '', jenis_kelamin_baru: 'L', berat_badan: '', tinggi_badan: '', lingkar_pinggang: '', tekanan_darah: '', tensi: 'Normal', gula_darah: '', nadi: '', status_imt: 'Normal' });
+        }
       });
     }
   };
@@ -329,7 +353,7 @@ export default function KesehatanView() {
 
       {message.text && (
         <div style={{ padding: '12px', marginBottom: '16px', borderRadius: '6px', backgroundColor: message.type === 'error' ? '#fde8e8' : '#e1fce8', color: message.type === 'error' ? '#c81e1e' : '#036c2a' }}>
-          {message.text}
+          <b>{message.type === 'error' ? 'Peringatan:' : 'Info Sistem:'}</b> {message.text}
         </div>
       )}
 
@@ -365,7 +389,6 @@ export default function KesehatanView() {
                         style={{
                           cursor: 'pointer',
                           border: isSelected ? '1px solid transparent' : '1px solid #cbd5e1',
-                          // Jika dipilih warnanya hijau muda, jika tidak maka abu-abu terang
                           backgroundColor: isSelected ? '#16a34a' : '#f8fafc',
                           color: isSelected ? '#ffffff' : '#475569',
                           padding: '6px 14px',
