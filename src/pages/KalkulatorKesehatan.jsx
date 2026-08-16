@@ -5,6 +5,35 @@ import Footer from '../components/common/Footer';
 import '../styles/kalkulator.css';
 import heroImg from '../assets/images/kalkulator/af631a2dbbede787c45511441c34f3d12887b4df.jpeg';
 
+// === DATABASE PINTAR BAWAAN SISTEM ===
+const DATABASE_PINTAR = [
+  { id: 'db_1', nama_makanan: 'Nasi Putih (1 centong/100g)', kalori_per_porsi: 130 },
+  { id: 'db_2', nama_makanan: 'Nasi Goreng (1 porsi)', kalori_per_porsi: 267 },
+  { id: 'db_3', nama_makanan: 'Mie Ayam (1 mangkuk)', kalori_per_porsi: 330 },
+  { id: 'db_4', nama_makanan: 'Bakso Sapi (1 mangkuk)', kalori_per_porsi: 326 },
+  { id: 'db_5', nama_makanan: 'Sate Ayam (10 tusuk)', kalori_per_porsi: 340 },
+  { id: 'db_6', nama_makanan: 'Soto Ayam (1 mangkuk)', kalori_per_porsi: 220 },
+  { id: 'db_7', nama_makanan: 'Rendang Sapi (1 potong)', kalori_per_porsi: 195 },
+  { id: 'db_8', nama_makanan: 'Gado-Gado (1 porsi)', kalori_per_porsi: 318 },
+  { id: 'db_9', nama_makanan: 'Tempe Goreng (1 potong)', kalori_per_porsi: 34 },
+  { id: 'db_10', nama_makanan: 'Tahu Goreng (1 potong)', kalori_per_porsi: 35 },
+  { id: 'db_11', nama_makanan: 'Ayam Goreng (1 potong)', kalori_per_porsi: 260 },
+  { id: 'db_12', nama_makanan: 'Ikan Bakar (1 potong)', kalori_per_porsi: 150 },
+  { id: 'db_13', nama_makanan: 'Es Teh Manis (1 gelas)', kalori_per_porsi: 90 },
+  { id: 'db_14', nama_makanan: 'Kopi Manis (1 cangkir)', kalori_per_porsi: 70 },
+  { id: 'db_15', nama_makanan: 'Pisang Goreng (1 potong)', kalori_per_porsi: 140 },
+  { id: 'db_16', nama_makanan: 'Telur Mata Sapi (1 butir)', kalori_per_porsi: 92 },
+  { id: 'db_17', nama_makanan: 'Telur Rebus (1 butir)', kalori_per_porsi: 77 },
+  { id: 'db_18', nama_makanan: 'Susu Sapi (1 gelas)', kalori_per_porsi: 146 },
+  { id: 'db_19', nama_makanan: 'Roti Tawar (1 lembar)', kalori_per_porsi: 75 },
+  { id: 'db_20', nama_makanan: 'Mie Instan Goreng (1 bungkus)', kalori_per_porsi: 380 },
+  { id: 'db_21', nama_makanan: 'Mie Instan Kuah (1 bungkus)', kalori_per_porsi: 330 },
+  { id: 'db_22', nama_makanan: 'Bubur Ayam (1 mangkuk)', kalori_per_porsi: 372 },
+  { id: 'db_23', nama_makanan: 'Nasi Padang (1 porsi komplit)', kalori_per_porsi: 680 },
+  { id: 'db_24', nama_makanan: 'Pempek (1 porsi)', kalori_per_porsi: 390 },
+  { id: 'db_25', nama_makanan: 'Sayur Sop (1 mangkuk)', kalori_per_porsi: 70 },
+];
+
 const ACTIVITY_FACTOR = {
   sangat_ringan: { label: 'Sangat Ringan (jarang olahraga, kerja duduk)', factor: 1.2 },
   ringan: { label: 'Ringan (olahraga 1–3 hari/minggu)', factor: 1.375 },
@@ -29,21 +58,37 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
   const [kalAktivitas, setKalAktivitas] = useState('sedang');
   const [kalResult, setKalResult] = useState(null);
 
-  // FOOD DB STATE (Ditarik dari API Laravel)
+  // FOOD DB STATE
   const [foodDb, setFoodDb] = useState([]);
   const [foodPick, setFoodPick] = useState('');
   const [foodQty, setFoodQty] = useState(1);
   const [foodLog, setFoodLog] = useState([]);
 
   useEffect(() => {
+    // Menarik menu tambahan dari Kader, lalu digabungkan dengan Database Pintar
     axios.get('http://127.0.0.1:8000/api/makanan')
       .then(res => {
-        setFoodDb(res.data.data);
-        if (res.data.data.length > 0) {
-          setFoodPick(res.data.data[0].id);
+        // Konversi ID dari Laravel jadi string agar aman saat digabung
+        const dbKader = res.data.data.map(item => ({
+          id: item.id.toString(),
+          nama_makanan: item.nama_makanan + ' (Menu Posyandu)',
+          kalori_per_porsi: item.kalori_per_porsi
+        }));
+
+        // Gabungkan Menu Posyandu (Kader) di urutan atas, lalu Menu Bawaan Sistem di bawahnya
+        const combinedFood = [...dbKader, ...DATABASE_PINTAR];
+        setFoodDb(combinedFood);
+
+        if (combinedFood.length > 0) {
+          setFoodPick(combinedFood[0].id);
         }
       })
-      .catch(err => console.error("Gagal memuat daftar makanan", err));
+      .catch(err => {
+        console.error("Gagal memuat daftar makanan dari server", err);
+        // Fallback: Jika server mati, Warga tetap bisa pakai Database Pintar!
+        setFoodDb(DATABASE_PINTAR);
+        setFoodPick(DATABASE_PINTAR[0].id);
+      });
   }, []);
 
   const handleCalcIMT = () => {
@@ -113,8 +158,8 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
   };
 
   const handleAddFood = () => {
-    // Cari data berdasarkan ID dari tabel referensi_makanan
-    const selectedItem = foodDb.find((f) => f.id === parseInt(foodPick));
+    // Cari data makanan gabungan berdasarkan ID
+    const selectedItem = foodDb.find((f) => f.id === foodPick);
     if (!selectedItem || foodQty <= 0) return;
 
     const totalKcal = selectedItem.kalori_per_porsi * foodQty;
@@ -278,7 +323,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
               </div>
             )}
 
-            {/* Pencatat Log Makanan (Menarik dari state foodDb) */}
+            {/* Pencatat Log Makanan (Menarik dari DB Gabungan) */}
             <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
               <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: 'var(--ink)' }}>
                 <i className="bi bi-journal-plus me-1" style={{ color: 'var(--orange-deep)' }}></i>
@@ -292,7 +337,7 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
                       <option key={f.id} value={f.id}>{f.nama_makanan} ({f.kalori_per_porsi} kcal)</option>
                     ))
                   ) : (
-                    <option value="">Memuat data...</option>
+                    <option value="">Memuat database makanan...</option>
                   )}
                 </select>
                 <input type="number" min="1" max="10" className="food-qty-input" value={foodQty} onChange={(e) => setFoodQty(parseInt(e.target.value) || 1)} />
@@ -305,16 +350,16 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
                 <div className="table-responsive">
                   <table className="table" style={{ fontSize: '12px' }}>
                     <thead>
-                      <tr><th>Menu Makanan</th><th>Porsi</th><th>Kalori</th><th>Aksi</th></tr>
+                      <tr><th>Menu Makanan</th><th>Porsi</th><th>Kalori</th><th style={{textAlign: 'right'}}>Aksi</th></tr>
                     </thead>
                     <tbody>
                       {foodLog.map((item) => (
                         <tr key={item.id}>
-                          <td>{item.nama}</td>
+                          <td><b>{item.nama}</b></td>
                           <td>{item.porsi}x</td>
-                          <td><b>{item.totalKalori} kcal</b></td>
-                          <td>
-                            <button style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', padding: 0 }} onClick={() => handleRemoveFood(item.id)}>
+                          <td style={{ color: 'var(--orange-deep)' }}><b>{item.totalKalori} kcal</b></td>
+                          <td style={{textAlign: 'right'}}>
+                            <button style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: 0 }} onClick={() => handleRemoveFood(item.id)}>
                               <i className="bi bi-trash-fill"></i>
                             </button>
                           </td>
@@ -324,8 +369,8 @@ export default function KalkulatorKesehatan({ activePage, onNavigate, onDarurat 
                   </table>
 
                   <div style={{ marginTop: '12px', padding: '12px', background: 'var(--surface-container-low)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>Total Kalori Makanan:</span>
-                    <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--orange-deep)' }}>{totalFoodKcal} kcal</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>Total Kalori Masuk:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--orange-deep)' }}>{totalFoodKcal} kcal</span>
                   </div>
                 </div>
               )}
