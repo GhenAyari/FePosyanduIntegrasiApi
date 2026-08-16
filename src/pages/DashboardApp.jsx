@@ -19,8 +19,6 @@ import AdminAnalitikView from '../components/dashboard/AdminAnalitikView';
 import AdminEksporView from '../components/dashboard/AdminEksporView';
 import WargaAnakView from '../components/dashboard/WargaAnakView';
 import WargaKalkulatorView from '../components/dashboard/WargaKalkulatorView';
-import WargaKieView from '../components/dashboard/WargaKieView';
-import WargaKontakView from '../components/dashboard/WargaKontakView';
 import WargaPasswordView from '../components/dashboard/WargaPasswordView';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import RekapKegiatanView from '../components/dashboard/RekapKegiatanView';
@@ -90,8 +88,6 @@ const NAV = {
       group: 'Menu Utama', items: [
         { id: 'warga-anak', label: 'Rapor Kesehatan Keluarga', ico: 'bi bi-person-heart' },
         { id: 'warga-kalkulator', label: 'Kalkulator Kesehatan', ico: 'bi bi-calculator-fill' },
-        { id: 'warga-kie', label: 'Portal KIE Khusus', ico: 'bi bi-journal-bookmark-fill' },
-        { id: 'warga-kontak', label: 'Kontak Posyandu', ico: 'bi bi-telephone-fill' },
       ]
     },
     {
@@ -118,8 +114,6 @@ const TITLES = {
   'superadmin-ekspor': ['Ekspor Gabungan 9 Posyandu', 'Ekspor rekap gabungan format khusus internal Puskesmas'],
   'warga-anak': ['Rapor Kesehatan Keluarga', 'Riwayat pemeriksaan anak (read-only)'],
   'warga-kalkulator': ['Kalkulator Kesehatan', '4 jenis kalkulator mandiri — lebih lengkap dari kalkulator publik'],
-  'warga-kie': ['Portal KIE Khusus', 'Materi edukasi literasi digital & kesiapsiagaan bencana'],
-  'warga-kontak': ['Kontak Posyandu', 'Hubungi Posyandu Anda'],
   'warga-password': ['Ganti Password', 'Perbarui kata sandi akun Anda kapan saja'],
   'pencatatan-kegiatan': ['Pencatatan Kegiatan', 'Formulir 13 Poin & Cetak PDF Vertikal TTD Digital'],
   'data-umum': ['Data Umum Posyandu', 'Pencatatan demografi sasaran dan pengunjung'],
@@ -163,8 +157,6 @@ export default function DashboardApp({ userAuth, onLogout }) {
       case 'superadmin-ekspor': return <AdminEksporView />;
       case 'warga-anak': return <WargaAnakView userAuth={userAuth} />;
       case 'warga-kalkulator': return <WargaKalkulatorView />;
-      case 'warga-kie': return <WargaKieView />;
-      case 'warga-kontak': return <WargaKontakView posyandu={namaPosyandu} />;
       case 'warga-password': return <WargaPasswordView />;
       case 'rekap-kegiatan': return <RekapKegiatanView />;
       case 'pencatatan-kegiatan': return <PencatatanKegiatanView />;
